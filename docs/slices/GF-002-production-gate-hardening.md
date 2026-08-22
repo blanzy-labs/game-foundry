@@ -6,6 +6,15 @@ GF-002 keeps the canonical production command unchanged:
 ./scripts/gf-001-acceptance.sh
 ```
 
+Routine fault-injection runs write their generated report into temporary storage so
+the production acceptance preflight still sees a clean checkout. Refresh the
+committed canonical fault-injection evidence only when intentionally recording a
+new accepted GF-002 run:
+
+```bash
+GF002_UPDATE_REPORTS=1 ./scripts/gf-001-failure-tests.sh
+```
+
 The source token, Godot static/runtime, screenshot, export, and exported-runtime decisions now live in `scripts/lib/gf-001-common.sh`. Production acceptance and `scripts/gf-001-failure-tests.sh` use those same functions. Scope validation remains shared there as well.
 
 Fault injection is isolated in `scripts/lib/gf-002-fault-gate.sh`. It refuses to run unless `GF001_TEST_MODE=1`, requires one recognized `GF001_TEST_FAULT`, operates only on disposable copies/worktrees, and cannot affect a normal acceptance invocation. Each injected case returns the shared production gate's actual exit code; the failure-test suite treats a non-zero gate result as a negative-test PASS.

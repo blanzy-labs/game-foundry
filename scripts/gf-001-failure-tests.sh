@@ -3,10 +3,11 @@ set -u
 
 repo_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 fault_gate="$repo_root/scripts/lib/gf-002-fault-gate.sh"
-report_dir="$repo_root/reports/gf-002"
+temp_root=$(mktemp -d "${TMPDIR:-/tmp}/game-foundry-gf002-suite.XXXXXX")
+report_dir="$temp_root/reports"
 report_json="$report_dir/fault-injection.json"
 report_md="$report_dir/fault-injection.md"
-temp_root=$(mktemp -d "${TMPDIR:-/tmp}/game-foundry-gf002-suite.XXXXXX")
+canonical_report_dir="$repo_root/reports/gf-002"
 started_at=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
 failures=0
 
@@ -64,6 +65,12 @@ jq -s \
   done
   printf '\nOverall: **%s**\n' "${overall^^}"
 } >"$report_md"
+
+if [[ ${GF002_UPDATE_REPORTS:-0} == 1 ]]; then
+  mkdir -p "$canonical_report_dir"
+  cp "$report_json" "$canonical_report_dir/fault-injection.json"
+  cp "$report_md" "$canonical_report_dir/fault-injection.md"
+fi
 
 if ((failures > 0)); then
   printf '\nGF-002 FAILURE INJECTION: FAIL (%s false acceptances)\n' "$failures"
