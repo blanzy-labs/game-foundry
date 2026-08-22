@@ -1,0 +1,48 @@
+{
+  "slice": "GF-001",
+  "status": "pass",
+  "started_at": "2026-08-22T20:55:15Z",
+  "completed_at": "2026-08-22T20:55:15Z",
+  "semantics": "A negative-test PASS means the injected fault was correctly rejected.",
+  "negative_tests": {
+    "broken_gdscript": {
+      "status": "pass",
+      "expected_failure": "Godot parse/static validation failure",
+      "actual_failure": true,
+      "godot_exit_code": 1,
+      "pipeline_exit_code": 1,
+      "relevant_log": "Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org\n\nSCRIPT ERROR: Parse Error: Expected opening \"(\" after function name.\n          at: GDScript::reload (res://validate.gd:2)\nERROR: Failed to load script \"res://validate.gd\" with error \"Parse error\".\n   at: load (modules/gdscript/gdscript_resource_format.cpp:46)"
+    },
+    "wrong_token": {
+      "status": "pass",
+      "expected_token": "GF001_EXPECTED",
+      "actual_token": "GF001_WRONG",
+      "application_exit_code": 0,
+      "runtime_marker_present": true,
+      "pipeline_exit_code": 1,
+      "relevant_log": "Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org\n\nGAME_FOUNDRY_TOKEN=GF001_WRONG\nGAME_FOUNDRY_RUNTIME_OK"
+    },
+    "unauthorized_change": {
+      "status": "pass",
+      "allowed_files": [
+        "fixtures/godot-smoke/automation_target.gd"
+      ],
+      "changed_files": [
+        "README.md",
+        "fixtures/godot-smoke/automation_target.gd"
+      ],
+      "unexpected_files": [
+        "README.md"
+      ],
+      "scope_result": "fail",
+      "pipeline_exit_code": 1
+    },
+    "missing_screenshot": {
+      "status": "pass",
+      "path": "/tmp/game-foundry-gf001-negative.dWM53n/nonexistent-screenshot.png",
+      "screenshot_exists": false,
+      "visual_stage": "fail",
+      "pipeline_exit_code": 1
+    }
+  }
+}

@@ -28,7 +28,7 @@ declare -A stages=(
   [preflight]=not_run [openclaw]=not_run [codex_runtime]=not_run
   [mutation]=not_run [scope]=not_run [godot_static]=not_run
   [godot_runtime]=not_run [screenshot]=not_run [export]=not_run
-  [export_runtime]=not_run
+  [export_runtime]=not_run [cleanup]=not_run
 )
 declare -A timing=(
   [preflight]=0 [agent]=0 [godot_validation]=0 [godot_runtime]=0
@@ -61,7 +61,7 @@ write_results() {
     --arg failure_reason "$failure_reason" --arg allowed_file "$allowed_file" \
     --arg scope_status "${stages[scope]}" \
     --arg static "${stages[godot_static]}" --arg runtime_validation "${stages[godot_runtime]}" \
-    --arg export_status "${stages[export]}" --arg export_runtime "${stages[export_runtime]}" \
+    --arg export_status "${stages[export]}" --arg export_runtime "${stages[export_runtime]}" --arg cleanup "${stages[cleanup]}" \
     --arg screenshot_status "${stages[screenshot]}" --arg screenshot_path "$artifact_rel/screenshot.png" \
     --arg screenshot_sha "$screenshot_sha" --arg build_status "${stages[export]}" \
     --arg build_path "$artifact_rel/build/game-foundry-smoke" \
@@ -71,7 +71,7 @@ write_results() {
     --argjson validation_seconds "${timing[godot_validation]}" --argjson runtime_seconds "${timing[godot_runtime]}" \
     --argjson render_seconds "${timing[render]}" --argjson export_seconds "${timing[export]}" \
     --argjson export_runtime_seconds "${timing[export_runtime]}" --argjson total_seconds "${timing[total]}" \
-    '{slice:$slice,run_id:$run_id,base_commit:$base_commit,mutation_token:$mutation_token,started_at:$started_at,completed_at:$completed_at,status:$status,failure_reason:$failure_reason,agent:{orchestrator:$orchestrator,runtime:$runtime,model:$model,execution_surface:$execution_surface,openclaw_exit_code:$openclaw_exit,runtime_evidence:$runtime_evidence,warning:$warning},source:{allowed_scope:($scope_status=="pass"),allowed_file:$allowed_file,changed_files:$changed_files},godot:{static_validation:$static,runtime_validation:$runtime_validation,export:$export_status,export_runtime:$export_runtime},screenshot:{status:$screenshot_status,path:$screenshot_path,sha256:$screenshot_sha,bytes:$screenshot_bytes,width:640,height:360},build:{status:$build_status,path:$build_path},timing_seconds:{preflight:$preflight_seconds,agent:$agent_seconds,godot_validation:$validation_seconds,godot_runtime:$runtime_seconds,render:$render_seconds,export:$export_seconds,export_runtime:$export_runtime_seconds,total:$total_seconds},human_interventions:0}' \
+    '{slice:$slice,run_id:$run_id,base_commit:$base_commit,mutation_token:$mutation_token,started_at:$started_at,completed_at:$completed_at,status:$status,failure_reason:$failure_reason,agent:{orchestrator:$orchestrator,runtime:$runtime,model:$model,execution_surface:$execution_surface,openclaw_exit_code:$openclaw_exit,runtime_evidence:$runtime_evidence,warning:$warning},source:{allowed_scope:($scope_status=="pass"),allowed_file:$allowed_file,changed_files:$changed_files},godot:{static_validation:$static,runtime_validation:$runtime_validation,export:$export_status,export_runtime:$export_runtime},screenshot:{status:$screenshot_status,path:$screenshot_path,sha256:$screenshot_sha,bytes:$screenshot_bytes,width:640,height:360},build:{status:$build_status,path:$build_path},cleanup:$cleanup,timing_seconds:{preflight:$preflight_seconds,agent:$agent_seconds,godot_validation:$validation_seconds,godot_runtime:$runtime_seconds,render:$render_seconds,export:$export_seconds,export_runtime:$export_runtime_seconds,total:$total_seconds},human_interventions:0}' \
     >"$artifact_dir/manifest.json"
 
   jq -n --arg status "$status" --arg run_id "$run_id" --arg artifact_dir "$artifact_rel" \
@@ -79,8 +79,8 @@ write_results() {
     --arg codex_runtime "${stages[codex_runtime]}" --arg mutation "${stages[mutation]}" \
     --arg scope "${stages[scope]}" --arg godot_static "${stages[godot_static]}" \
     --arg godot_runtime "${stages[godot_runtime]}" --arg screenshot "${stages[screenshot]}" \
-    --arg export_status "${stages[export]}" --arg export_runtime "${stages[export_runtime]}" \
-    '{status:$status,slice:"GF-001",run_id:$run_id,stages:{preflight:$preflight,openclaw:$openclaw,codex_runtime:$codex_runtime,mutation:$mutation,scope:$scope,godot_static:$godot_static,godot_runtime:$godot_runtime,screenshot:$screenshot,export:$export_status,export_runtime:$export_runtime},artifact_dir:$artifact_dir}' \
+    --arg export_status "${stages[export]}" --arg export_runtime "${stages[export_runtime]}" --arg cleanup "${stages[cleanup]}" \
+    '{status:$status,slice:"GF-001",run_id:$run_id,stages:{preflight:$preflight,openclaw:$openclaw,codex_runtime:$codex_runtime,mutation:$mutation,scope:$scope,godot_static:$godot_static,godot_runtime:$godot_runtime,screenshot:$screenshot,export:$export_status,export_runtime:$export_runtime,cleanup:$cleanup},artifact_dir:$artifact_dir}' \
     >"$reports_dir/latest.json"
 
   {
@@ -92,6 +92,7 @@ write_results() {
     printf 'Godot\n  Static validation .... %s\n  Runtime .............. %s\n  Expected token ....... %s\n\n' "${stages[godot_static]^^}" "${stages[godot_runtime]^^}" "${stages[godot_runtime]^^}"
     printf 'Visual\n  Screenshot ........... %s\n  Resolution ........... 640x360\n  SHA-256 .............. %s\n\n' "${stages[screenshot]^^}" "${screenshot_sha:-unavailable}"
     printf 'Build\n  Linux export ......... %s\n  Exported runtime ..... %s\n\n' "${stages[export]^^}" "${stages[export_runtime]^^}"
+    printf 'Cleanup\n  Temporary worktree ... %s\n\n' "${stages[cleanup]^^}"
     printf 'Artifacts\n  Screenshot ........... %s/screenshot.png\n  Linux build .......... %s/build/game-foundry-smoke\n  Manifest ............. %s/manifest.json\n\n' "$artifact_rel" "$artifact_rel" "$artifact_rel"
     [[ -n $failure_reason ]] && printf 'Failure: %s\n\n' "$failure_reason"
     printf 'Pipeline status:\n\nGF-001 %s\n' "${status^^}"
@@ -233,10 +234,8 @@ gf001_require_marker "$artifact_dir/exported-runtime.log" "GAME_FOUNDRY_TOKEN=$m
 stages[export_runtime]=pass
 timing[export_runtime]=$(gf001_elapsed_seconds "$phase_start" "$(date +%s%N)")
 
-write_results pass
 ln -sfn "$bootstrap_workspace" "$agent_workspace"
-git -C "$repo_root" worktree remove --force "$worktree" >>"$artifact_dir/worktree.log" 2>&1 || {
-  printf 'WARN: successful worktree cleanup failed: %s\n' "$worktree" >&2
-  exit 1
-}
+git -C "$repo_root" worktree remove --force "$worktree" >>"$artifact_dir/worktree.log" 2>&1 || fail_stage cleanup "successful worktree cleanup failed: $worktree"
+stages[cleanup]=pass
+write_results pass
 printf '\nGF-001 PASS: %s\n' "$run_id"
