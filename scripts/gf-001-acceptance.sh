@@ -59,6 +59,7 @@ write_results() {
     --arg orchestrator openclaw --arg runtime codex --arg model "$model" \
     --arg execution_surface "$execution_surface" --arg warning "$warning" \
     --arg failure_reason "$failure_reason" --arg allowed_file "$allowed_file" \
+    --arg scope_status "${stages[scope]}" \
     --arg static "${stages[godot_static]}" --arg runtime_validation "${stages[godot_runtime]}" \
     --arg export_status "${stages[export]}" --arg export_runtime "${stages[export_runtime]}" \
     --arg screenshot_status "${stages[screenshot]}" --arg screenshot_path "$artifact_rel/screenshot.png" \
@@ -70,7 +71,7 @@ write_results() {
     --argjson validation_seconds "${timing[godot_validation]}" --argjson runtime_seconds "${timing[godot_runtime]}" \
     --argjson render_seconds "${timing[render]}" --argjson export_seconds "${timing[export]}" \
     --argjson export_runtime_seconds "${timing[export_runtime]}" --argjson total_seconds "${timing[total]}" \
-    '{slice:$slice,run_id:$run_id,base_commit:$base_commit,mutation_token:$mutation_token,started_at:$started_at,completed_at:$completed_at,status:$status,failure_reason:$failure_reason,agent:{orchestrator:$orchestrator,runtime:$runtime,model:$model,execution_surface:$execution_surface,openclaw_exit_code:$openclaw_exit,runtime_evidence:$runtime_evidence,warning:$warning},source:{allowed_scope:($status=="pass"),allowed_file:$allowed_file,changed_files:$changed_files},godot:{static_validation:$static,runtime_validation:$runtime_validation,export:$export_status,export_runtime:$export_runtime},screenshot:{status:$screenshot_status,path:$screenshot_path,sha256:$screenshot_sha,bytes:$screenshot_bytes,width:640,height:360},build:{status:$build_status,path:$build_path},timing_seconds:{preflight:$preflight_seconds,agent:$agent_seconds,godot_validation:$validation_seconds,godot_runtime:$runtime_seconds,render:$render_seconds,export:$export_seconds,export_runtime:$export_runtime_seconds,total:$total_seconds},human_interventions:0}' \
+    '{slice:$slice,run_id:$run_id,base_commit:$base_commit,mutation_token:$mutation_token,started_at:$started_at,completed_at:$completed_at,status:$status,failure_reason:$failure_reason,agent:{orchestrator:$orchestrator,runtime:$runtime,model:$model,execution_surface:$execution_surface,openclaw_exit_code:$openclaw_exit,runtime_evidence:$runtime_evidence,warning:$warning},source:{allowed_scope:($scope_status=="pass"),allowed_file:$allowed_file,changed_files:$changed_files},godot:{static_validation:$static,runtime_validation:$runtime_validation,export:$export_status,export_runtime:$export_runtime},screenshot:{status:$screenshot_status,path:$screenshot_path,sha256:$screenshot_sha,bytes:$screenshot_bytes,width:640,height:360},build:{status:$build_status,path:$build_path},timing_seconds:{preflight:$preflight_seconds,agent:$agent_seconds,godot_validation:$validation_seconds,godot_runtime:$runtime_seconds,render:$render_seconds,export:$export_seconds,export_runtime:$export_runtime_seconds,total:$total_seconds},human_interventions:0}' \
     >"$artifact_dir/manifest.json"
 
   jq -n --arg status "$status" --arg run_id "$run_id" --arg artifact_dir "$artifact_rel" \
@@ -175,8 +176,8 @@ stages[openclaw]=pass
 
 openclaw audit --session "$session_key" --kind agent_run --limit 20 --json >"$artifact_dir/openclaw-audit.json" 2>"$artifact_dir/openclaw-audit.stderr.log" || true
 journalctl --user -u openclaw-gateway.service --since "$started_at" --no-pager >"$artifact_dir/openclaw-gateway.log" 2>&1 || true
-if jq -e '.. | objects | select((.agentRuntime? == "codex") or (.runtime? == "codex") or (.runtimeId? == "codex"))' "$artifact_dir/openclaw-result.json" "$artifact_dir/openclaw-audit.json" >/dev/null 2>&1; then
-  runtime_evidence='OpenClaw result/audit recorded runtime=codex'
+if jq -e '.. | objects | select((.agentRuntime? == "codex") or (.runtime? == "codex") or (.runtimeId? == "codex") or (.agentHarnessId? == "codex"))' "$artifact_dir/openclaw-result.json" "$artifact_dir/openclaw-audit.json" >/dev/null 2>&1; then
+  runtime_evidence='OpenClaw result/audit recorded agentHarnessId/runtime=codex'
 elif grep -Eqi 'codex.*(app-server|harness|runtime)|(app-server|harness|runtime).*codex' "$artifact_dir/openclaw-gateway.log"; then
   runtime_evidence='OpenClaw gateway log recorded Codex harness/app-server execution'
 else

@@ -2,7 +2,7 @@
 
 An AI-operated, human-directed automation platform for building and operating small Godot games.
 
-Current status: **GF-000 — prerequisites/bootstrap**.
+Current status: **GF-001 — end-to-end acceptance**.
 
 ## Validate workstation
 
