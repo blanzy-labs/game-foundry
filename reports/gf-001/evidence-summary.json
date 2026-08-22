@@ -1,0 +1,109 @@
+{
+  "slice": "GF-001",
+  "status": "pass",
+  "successful_runs": [
+    {
+      "designation": "Run A",
+      "run_id": "gf001-20260822T201203Z-45de91",
+      "base_commit": "3dfed16f9ba6d069904da13bde9c2ebf03b3dbbc",
+      "mutation_token": "GF001_45DE91",
+      "status": "pass",
+      "codex_runtime_evidence": "openclaw-result.json result.meta.agentMeta.agentHarnessId=codex; Gateway log recorded Codex harness/app-server execution",
+      "screenshot_sha256": "50d91be2418d5484cf2b182a43841b84b490f9ff5a4adf58338c549141d39875",
+      "artifact_directory": "artifacts/gf-001/gf001-20260822T201203Z-45de91",
+      "human_interventions": 0,
+      "timing_seconds": {
+        "preflight": 14.209,
+        "agent": 178.351,
+        "godot_validation": 3.222,
+        "godot_runtime": 0.315,
+        "render": 0.825,
+        "export": 3.029,
+        "export_runtime": 0.314,
+        "total": 231.825
+      }
+    },
+    {
+      "designation": "Run B",
+      "run_id": "gf001-20260822T205541Z-3a2e70",
+      "base_commit": "30d71f16aae39ca24397c836602f8efda77a9df1",
+      "mutation_token": "GF001_3A2E70",
+      "status": "pass",
+      "codex_runtime_evidence": "openclaw-result.json result.meta.agentMeta.agentHarnessId=codex",
+      "screenshot_sha256": "00bb92cd390202fbe5a8ca1e3740d474b201bf7c992b950cd87187c51bc9eae7",
+      "artifact_directory": "artifacts/gf-001/gf001-20260822T205541Z-3a2e70",
+      "human_interventions": 0,
+      "timing_seconds": {
+        "preflight": 14.075,
+        "agent": 134.805,
+        "godot_validation": 3.220,
+        "godot_runtime": 0.315,
+        "render": 0.824,
+        "export": 2.827,
+        "export_runtime": 0.313,
+        "total": 186.650
+      }
+    }
+  ],
+  "independence": {
+    "different_run_ids": true,
+    "different_mutation_tokens": true,
+    "different_screenshot_sha256": true,
+    "different_artifact_directories": true,
+    "isolated_detached_worktrees": true,
+    "successful_worktrees_removed": true,
+    "primary_fixture_token": "GF001_INITIAL",
+    "canonical_state_note": "Run B includes evidence-only fail-closed hardening committed after Run A; both runs began from clean commits and independently mutated the same canonical target from GF001_INITIAL."
+  },
+  "negative_tests": {
+    "broken_gdscript": {
+      "status": "pass",
+      "pipeline_rejected_fault": true,
+      "godot_exit_code": 1,
+      "pipeline_exit_code": 1
+    },
+    "wrong_token": {
+      "status": "pass",
+      "pipeline_rejected_fault": true,
+      "application_exit_code": 0,
+      "pipeline_exit_code": 1
+    },
+    "unauthorized_change": {
+      "status": "pass",
+      "pipeline_rejected_fault": true,
+      "changed_files": [
+        "README.md",
+        "fixtures/godot-smoke/automation_target.gd"
+      ],
+      "unexpected_files": [
+        "README.md"
+      ],
+      "pipeline_exit_code": 1
+    },
+    "missing_screenshot": {
+      "status": "pass",
+      "pipeline_rejected_fault": true,
+      "pipeline_exit_code": 1
+    }
+  },
+  "fail_closed_review": {
+    "critical_failure_can_produce_pass": false,
+    "verified_failure_gates": [
+      "openclaw",
+      "codex_runtime_evidence",
+      "source_mutation",
+      "scope",
+      "godot_static",
+      "godot_runtime",
+      "token",
+      "screenshot",
+      "export",
+      "export_runtime",
+      "cleanup"
+    ],
+    "correction": "Moved PASS report creation after successful temporary-worktree cleanup and added cleanup as a recorded fail-closed stage.",
+    "regression_evidence": "Run B manifest records cleanup=pass and was written only after worktree removal succeeded."
+  },
+  "negative_test_evidence": "reports/gf-001/negative-test-evidence.json",
+  "known_limitation": "OpenClaw 2026.7.1-2 stable does not expose agent exec; GF-001 uses the supported Gateway-backed openclaw agent surface with a dedicated isolated workspace and explicit Codex runtime evidence."
+}

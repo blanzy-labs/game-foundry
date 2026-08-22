@@ -1,8 +1,8 @@
 {
   "slice": "GF-001",
   "status": "pass",
-  "started_at": "2026-08-22T20:55:15Z",
-  "completed_at": "2026-08-22T20:55:15Z",
+  "started_at": "2026-08-22T20:59:09Z",
+  "completed_at": "2026-08-22T20:59:10Z",
   "semantics": "A negative-test PASS means the injected fault was correctly rejected.",
   "negative_tests": {
     "broken_gdscript": {
@@ -39,7 +39,7 @@
     },
     "missing_screenshot": {
       "status": "pass",
-      "path": "/tmp/game-foundry-gf001-negative.dWM53n/nonexistent-screenshot.png",
+      "path": "/tmp/game-foundry-gf001-negative.hTs6lZ/nonexistent-screenshot.png",
       "screenshot_exists": false,
       "visual_stage": "fail",
       "pipeline_exit_code": 1

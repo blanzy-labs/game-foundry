@@ -29,3 +29,5 @@ Run controlled fail-closed checks with:
 ```bash
 ./scripts/gf-001-failure-tests.sh
 ```
+
+Review the source-controlled [GF-001 evidence summary](reports/gf-001/evidence-summary.md).
