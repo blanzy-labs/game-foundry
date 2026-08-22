@@ -1,0 +1,81 @@
+{
+  "slice": "GF-002",
+  "status": "pass",
+  "production_command": "./scripts/gf-001-acceptance.sh",
+  "production_command_changed": false,
+  "gateway_path_changed": false,
+  "refactor": {
+    "completed": true,
+    "shared_library": "scripts/lib/gf-001-common.sh",
+    "production_path": "scripts/gf-001-acceptance.sh",
+    "negative_test_path": "scripts/gf-001-failure-tests.sh",
+    "test_only_driver": "scripts/lib/gf-002-fault-gate.sh",
+    "fault_injection_disabled_by_default": true,
+    "shared_gates": [
+      "source_token",
+      "source_scope",
+      "godot_static",
+      "godot_runtime",
+      "screenshot",
+      "export",
+      "export_runtime"
+    ]
+  },
+  "shared_gate_tests": {
+    "status": "pass",
+    "passed": 6,
+    "total": 6
+  },
+  "fault_tests": {
+    "status": "pass",
+    "evidence": "reports/gf-002/fault-injection.json",
+    "passed": 5,
+    "total": 5,
+    "all_shared_production_gate_exits_nonzero": true,
+    "cases": {
+      "A_broken_gdscript": "pass",
+      "B_wrong_token": "pass",
+      "C_unauthorized_source_change": "pass",
+      "D_missing_screenshot": "pass",
+      "E_agent_success_engine_failure": "pass"
+    }
+  },
+  "pass_ordering": {
+    "status": "pass",
+    "success_written_after_cleanup": true
+  },
+  "happy_path": {
+    "status": "pass",
+    "run_id": "gf001-20260822T214748Z-70abd6",
+    "base_commit": "07cd8703ce8a80b5a2c4ec0d416406d5fa6a55ed",
+    "mutation_token": "GF001_70ABD6",
+    "orchestrator": "openclaw",
+    "codex_runtime": "pass",
+    "model": "openai/gpt-5.6-sol",
+    "execution_surface": "gateway-agent",
+    "runtime_evidence": "OpenClaw result/audit recorded agentHarnessId/runtime=codex",
+    "godot_static": "pass",
+    "godot_runtime": "pass",
+    "screenshot": "pass",
+    "screenshot_path": "artifacts/gf-001/gf001-20260822T214748Z-70abd6/screenshot.png",
+    "screenshot_sha256": "617e654fa08187bf887fe151a2b5738b9739fff1efb9d058bdb6c41d24dbd1de",
+    "screenshot_bytes": 19102,
+    "screenshot_width": 640,
+    "screenshot_height": 360,
+    "export": "pass",
+    "export_runtime": "pass",
+    "cleanup": "pass",
+    "human_interventions": 0
+  },
+  "human_visual_review": {
+    "status": "not_performed",
+    "automated_approval_claimed": false,
+    "procedure": "docs/slices/GF-002-production-gate-hardening.md"
+  },
+  "preserved_gf001_runs": [
+    "gf001-20260822T201203Z-45de91",
+    "gf001-20260822T205541Z-3a2e70"
+  ],
+  "scope_expansion": false,
+  "turd_burglar_work_started": false
+}

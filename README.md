@@ -33,3 +33,4 @@ Run controlled fail-closed checks with:
 Review the source-controlled [GF-001 evidence summary](reports/gf-001/evidence-summary.md).
 
 Production-gate hardening and fault-injection guidance are documented in [GF-002](docs/slices/GF-002-production-gate-hardening.md).
+Review the source-controlled [GF-002 evidence summary](reports/gf-002/evidence-summary.md).

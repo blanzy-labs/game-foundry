@@ -64,9 +64,12 @@ case "$fault" in
     printf '%s\n' "${changed_files[@]}" >"$temp_root/gate.log"
     ;;
   missing-screenshot)
-    printf 'GAME_FOUNDRY_TOKEN=%s\n' "$expected_token" >"$temp_root/gate.log"
-    command_exit=0
-    gf001_gate_screenshot "$temp_root/gate.log" "$command_exit" "$temp_root/missing.png" "$expected_token"
+    cp -a "$repo_root/fixtures/godot-smoke" "$temp_root/fixture"
+    sed -i "s/GF001_INITIAL/$expected_token/" "$temp_root/fixture/automation_target.gd"
+    timeout 60 xvfb-run -a -s '-screen 0 640x360x24' "$godot_bin" --display-driver x11 --path "$temp_root/fixture" --resolution 640x360 -- --screenshot="$temp_root/screenshot.png" >"$temp_root/gate.log" 2>&1
+    command_exit=$?
+    [[ -f $temp_root/screenshot.png ]] && mv "$temp_root/screenshot.png" "$temp_root/intentionally-removed-screenshot.png"
+    gf001_gate_screenshot "$temp_root/gate.log" "$command_exit" "$temp_root/screenshot.png" "$expected_token"
     gate_exit=$?
     ;;
   agent-success-engine-failure)

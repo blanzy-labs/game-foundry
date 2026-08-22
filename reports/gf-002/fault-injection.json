@@ -1,8 +1,8 @@
 {
   "slice": "GF-002",
   "status": "pass",
-  "started_at": "2026-08-22T21:38:23Z",
-  "completed_at": "2026-08-22T21:38:24Z",
+  "started_at": "2026-08-22T21:52:34Z",
+  "completed_at": "2026-08-22T21:52:36Z",
   "semantics": "A negative-test PASS means the shared production gate returned non-zero for the injected fault.",
   "faults": [
     {
@@ -37,7 +37,7 @@
       "source_gate_exit_code": -1,
       "production_gate_exit_code": 1,
       "changed_files": [],
-      "log_excerpt": "GAME_FOUNDRY_TOKEN=GF001_EXPECTED",
+      "log_excerpt": "Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org\nWARNING: Failed to create wd.xic as the input method or its xim server may not have started yet.\n     at: _create_xic (platform/linuxbsd/x11/display_server_x11.cpp:6347)\nWARNING: Could not set V-Sync mode, as changing V-Sync mode is not supported by the graphics driver.\n     at: set_use_vsync (platform/linuxbsd/x11/gl_manager_x11.cpp:372)\nOpenGL API 4.5 (Core Profile) Mesa 26.0.3-1ubuntu1 - Compatibility - Using Device: Mesa - llvmpipe (LLVM 21.1.8, 256 bits)\n\nGAME_FOUNDRY_TOKEN=GF001_EXPECTED\nGAME_FOUNDRY_SCREENSHOT_OK=/tmp/game-foundry-gf002-fault.bPRZsG/screenshot.png",
       "negative_test_status": "pass",
       "pipeline_exit_code": 1
     },
