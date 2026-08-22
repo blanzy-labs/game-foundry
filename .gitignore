@@ -1,0 +1,11 @@
+.godot/
+build/
+builds/
+tmp/
+.cache/
+.vscode/
+*.log
+.env
+.env.*
+!.env.example
+!toolchain.env.example
