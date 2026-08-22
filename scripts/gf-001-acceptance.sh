@@ -191,46 +191,55 @@ mapfile -t changed_files < <(git -C "$worktree" status --porcelain=v1 | sed -E '
 changed_files_json=$(printf '%s\n' "${changed_files[@]}" | jq -Rsc 'split("\n") | map(select(length > 0))')
 gf001_verify_scope "$worktree" "$allowed_file" || fail_stage scope 'agent changed files outside the allowlist or did not change the target'
 stages[scope]=pass
-grep -Fq "AUTOMATION_TOKEN := \"$mutation_token\"" "$worktree/$allowed_file" || fail_stage mutation 'expected token is absent from mutation target'
-grep -Fq 'GF001_INITIAL' "$worktree/$allowed_file" && fail_stage mutation 'initial token remains in mutation target'
+gf001_gate_source_token "$worktree/$allowed_file" "$mutation_token" || fail_stage mutation 'mutation token gate failed'
 stages[mutation]=pass
 
 phase_start=$(date +%s%N)
 timeout 60 "$godot_bin" --headless --path "$worktree/fixtures/godot-smoke" --editor --quit-after 3 >"$artifact_dir/godot-import.log" 2>&1 || fail_stage godot_static 'Godot import/load failed'
-timeout 30 "$godot_bin" --headless --path "$worktree/fixtures/godot-smoke" --script validate.gd -- --expected-token="$mutation_token" >"$artifact_dir/godot-validation.log" 2>&1 || fail_stage godot_static 'Godot static validation failed'
-gf001_require_marker "$artifact_dir/godot-validation.log" GAME_FOUNDRY_STATIC_OK || fail_stage godot_static 'static success marker missing'
-gf001_require_marker "$artifact_dir/godot-validation.log" "GAME_FOUNDRY_TOKEN=$mutation_token" || fail_stage godot_static 'static token marker missing'
+set +e
+timeout 30 "$godot_bin" --headless --path "$worktree/fixtures/godot-smoke" --script validate.gd -- --expected-token="$mutation_token" >"$artifact_dir/godot-validation.log" 2>&1
+godot_validation_exit=$?
+set -e
+gf001_gate_static "$artifact_dir/godot-validation.log" "$godot_validation_exit" "$mutation_token" || fail_stage godot_static "static gate rejected exit=$godot_validation_exit or required markers"
 stages[godot_static]=pass
 timing[godot_validation]=$(gf001_elapsed_seconds "$phase_start" "$(date +%s%N)")
 
 phase_start=$(date +%s%N)
-timeout 30 "$godot_bin" --headless --path "$worktree/fixtures/godot-smoke" -- --runtime-test >"$artifact_dir/godot-runtime.log" 2>&1 || fail_stage godot_runtime 'Godot runtime failed'
-gf001_require_marker "$artifact_dir/godot-runtime.log" GAME_FOUNDRY_RUNTIME_OK || fail_stage godot_runtime 'runtime success marker missing'
-gf001_require_marker "$artifact_dir/godot-runtime.log" "GAME_FOUNDRY_TOKEN=$mutation_token" || fail_stage godot_runtime 'runtime token marker missing'
+set +e
+timeout 30 "$godot_bin" --headless --path "$worktree/fixtures/godot-smoke" -- --runtime-test >"$artifact_dir/godot-runtime.log" 2>&1
+godot_runtime_exit=$?
+set -e
+gf001_gate_runtime "$artifact_dir/godot-runtime.log" "$godot_runtime_exit" "$mutation_token" || fail_stage godot_runtime "runtime gate rejected exit=$godot_runtime_exit or required markers"
 stages[godot_runtime]=pass
 timing[godot_runtime]=$(gf001_elapsed_seconds "$phase_start" "$(date +%s%N)")
 
 phase_start=$(date +%s%N)
-timeout 60 xvfb-run -a -s '-screen 0 640x360x24' "$godot_bin" --display-driver x11 --path "$worktree/fixtures/godot-smoke" --resolution 640x360 -- --screenshot="$artifact_dir/screenshot.png" >"$artifact_dir/godot-screenshot.log" 2>&1 || fail_stage screenshot 'rendered screenshot command failed'
-gf001_require_marker "$artifact_dir/godot-screenshot.log" "GAME_FOUNDRY_TOKEN=$mutation_token" || fail_stage screenshot 'screenshot run token marker missing'
-gf001_validate_png "$artifact_dir/screenshot.png" 640 360 || fail_stage screenshot 'PNG validation failed'
+set +e
+timeout 60 xvfb-run -a -s '-screen 0 640x360x24' "$godot_bin" --display-driver x11 --path "$worktree/fixtures/godot-smoke" --resolution 640x360 -- --screenshot="$artifact_dir/screenshot.png" >"$artifact_dir/godot-screenshot.log" 2>&1
+screenshot_exit=$?
+set -e
+gf001_gate_screenshot "$artifact_dir/godot-screenshot.log" "$screenshot_exit" "$artifact_dir/screenshot.png" "$mutation_token" || fail_stage screenshot "screenshot gate rejected exit=$screenshot_exit, token, or PNG"
 screenshot_sha=$(sha256sum "$artifact_dir/screenshot.png" | cut -d' ' -f1)
 screenshot_bytes=$(wc -c <"$artifact_dir/screenshot.png")
 stages[screenshot]=pass
 timing[render]=$(gf001_elapsed_seconds "$phase_start" "$(date +%s%N)")
 
 phase_start=$(date +%s%N)
-timeout 120 "$godot_bin" --headless --path "$worktree/fixtures/godot-smoke" --export-release 'Linux x86_64' "$artifact_dir/build/game-foundry-smoke" >"$artifact_dir/export.log" 2>&1 || fail_stage export 'Linux export failed'
-[[ -x $artifact_dir/build/game-foundry-smoke ]] || fail_stage export 'exported executable is missing'
+set +e
+timeout 120 "$godot_bin" --headless --path "$worktree/fixtures/godot-smoke" --export-release 'Linux x86_64' "$artifact_dir/build/game-foundry-smoke" >"$artifact_dir/export.log" 2>&1
+export_exit=$?
+set -e
+gf001_gate_export "$artifact_dir/build/game-foundry-smoke" "$export_exit" || fail_stage export "export gate rejected exit=$export_exit, executable, or file type"
 file "$artifact_dir/build/game-foundry-smoke" >"$artifact_dir/build-file.txt"
-grep -Fq 'ELF 64-bit' "$artifact_dir/build-file.txt" || fail_stage export 'export is not an ELF 64-bit executable'
 stages[export]=pass
 timing[export]=$(gf001_elapsed_seconds "$phase_start" "$(date +%s%N)")
 
 phase_start=$(date +%s%N)
-timeout 30 "$artifact_dir/build/game-foundry-smoke" --headless -- --export-self-test >"$artifact_dir/exported-runtime.log" 2>&1 || fail_stage export_runtime 'exported executable failed'
-gf001_require_marker "$artifact_dir/exported-runtime.log" GAME_FOUNDRY_EXPORT_RUNTIME_OK || fail_stage export_runtime 'export runtime success marker missing'
-gf001_require_marker "$artifact_dir/exported-runtime.log" "GAME_FOUNDRY_TOKEN=$mutation_token" || fail_stage export_runtime 'export runtime token marker missing'
+set +e
+timeout 30 "$artifact_dir/build/game-foundry-smoke" --headless -- --export-self-test >"$artifact_dir/exported-runtime.log" 2>&1
+export_runtime_exit=$?
+set -e
+gf001_gate_export_runtime "$artifact_dir/exported-runtime.log" "$export_runtime_exit" "$mutation_token" || fail_stage export_runtime "export runtime gate rejected exit=$export_runtime_exit or required markers"
 stages[export_runtime]=pass
 timing[export_runtime]=$(gf001_elapsed_seconds "$phase_start" "$(date +%s%N)")
 

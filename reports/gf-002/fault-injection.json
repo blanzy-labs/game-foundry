@@ -1,0 +1,72 @@
+{
+  "slice": "GF-002",
+  "status": "pass",
+  "started_at": "2026-08-22T21:38:23Z",
+  "completed_at": "2026-08-22T21:38:24Z",
+  "semantics": "A negative-test PASS means the shared production gate returned non-zero for the injected fault.",
+  "faults": [
+    {
+      "fault": "agent-success-engine-failure",
+      "test_mode": true,
+      "agent_status": "success",
+      "command_exit_code": 1,
+      "source_gate_exit_code": 0,
+      "production_gate_exit_code": 1,
+      "changed_files": [],
+      "log_excerpt": "Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org\n\nSCRIPT ERROR: Parse Error: Expected opening \"(\" after function name.\n          at: GDScript::reload (res://validate.gd:2)\nERROR: Failed to load script \"res://validate.gd\" with error \"Parse error\".\n   at: load (modules/gdscript/gdscript_resource_format.cpp:46)",
+      "negative_test_status": "pass",
+      "pipeline_exit_code": 1
+    },
+    {
+      "fault": "broken-gdscript",
+      "test_mode": true,
+      "agent_status": "not_applicable",
+      "command_exit_code": 1,
+      "source_gate_exit_code": -1,
+      "production_gate_exit_code": 1,
+      "changed_files": [],
+      "log_excerpt": "Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org\n\nSCRIPT ERROR: Parse Error: Expected opening \"(\" after function name.\n          at: GDScript::reload (res://validate.gd:2)\nERROR: Failed to load script \"res://validate.gd\" with error \"Parse error\".\n   at: load (modules/gdscript/gdscript_resource_format.cpp:46)",
+      "negative_test_status": "pass",
+      "pipeline_exit_code": 1
+    },
+    {
+      "fault": "missing-screenshot",
+      "test_mode": true,
+      "agent_status": "not_applicable",
+      "command_exit_code": 0,
+      "source_gate_exit_code": -1,
+      "production_gate_exit_code": 1,
+      "changed_files": [],
+      "log_excerpt": "GAME_FOUNDRY_TOKEN=GF001_EXPECTED",
+      "negative_test_status": "pass",
+      "pipeline_exit_code": 1
+    },
+    {
+      "fault": "scope-violation",
+      "test_mode": true,
+      "agent_status": "not_applicable",
+      "command_exit_code": 0,
+      "source_gate_exit_code": -1,
+      "production_gate_exit_code": 1,
+      "changed_files": [
+        "README.md",
+        "fixtures/godot-smoke/automation_target.gd"
+      ],
+      "log_excerpt": "README.md\nfixtures/godot-smoke/automation_target.gd",
+      "negative_test_status": "pass",
+      "pipeline_exit_code": 1
+    },
+    {
+      "fault": "wrong-token",
+      "test_mode": true,
+      "agent_status": "not_applicable",
+      "command_exit_code": 0,
+      "source_gate_exit_code": -1,
+      "production_gate_exit_code": 1,
+      "changed_files": [],
+      "log_excerpt": "Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org\n\nGAME_FOUNDRY_TOKEN=GF001_WRONG\nGAME_FOUNDRY_RUNTIME_OK",
+      "negative_test_status": "pass",
+      "pipeline_exit_code": 1
+    }
+  ]
+}

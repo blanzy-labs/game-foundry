@@ -2,124 +2,71 @@
 set -u
 
 repo_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
-source "$repo_root/scripts/lib/gf-001-common.sh"
-godot_bin=${GODOT_BIN:-godot}
-report_json="$repo_root/reports/gf-001/negative-test-evidence.json"
-report_md="$repo_root/reports/gf-001/negative-test-evidence.md"
-failures=0
-temp_root=$(mktemp -d "${TMPDIR:-/tmp}/game-foundry-gf001-negative.XXXXXX")
-scope_worktree="$temp_root/scope-worktree"
+fault_gate="$repo_root/scripts/lib/gf-002-fault-gate.sh"
+report_dir="$repo_root/reports/gf-002"
+report_json="$report_dir/fault-injection.json"
+report_md="$report_dir/fault-injection.md"
+temp_root=$(mktemp -d "${TMPDIR:-/tmp}/game-foundry-gf002-suite.XXXXXX")
 started_at=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
+failures=0
 
-cleanup() {
-  if git -C "$repo_root" worktree list --porcelain | grep -Fqx "worktree $scope_worktree"; then
-    git -C "$repo_root" worktree remove --force "$scope_worktree" >/dev/null 2>&1 || true
-  fi
-  rm -rf -- "$temp_root"
-}
+cleanup() { rm -rf -- "$temp_root"; }
 trap cleanup EXIT
-mkdir -p "$(dirname "$report_json")"
+mkdir -p "$report_dir"
 
-report_expected_rejection() {
-  local name=$1 detected=$2
-  if [[ $detected == true ]]; then
-    printf '%-36s PASS (fault rejected)\n' "$name"
+faults=(broken-gdscript wrong-token scope-violation missing-screenshot agent-success-engine-failure)
+labels=(
+  'A — Broken GDScript'
+  'B — Wrong mutation token'
+  'C — Unauthorized source change'
+  'D — Missing screenshot'
+  'E — Agent success / Godot failure'
+)
+
+for index in "${!faults[@]}"; do
+  fault=${faults[$index]}
+  evidence="$temp_root/$fault.json"
+  GF001_TEST_MODE=1 GF001_TEST_FAULT="$fault" GF001_TEST_EVIDENCE_FILE="$evidence" "$fault_gate"
+  pipeline_exit=$?
+  if [[ $pipeline_exit -ne 0 && -s $evidence ]]; then
+    status=pass
+    printf '%-40s PASS (production gate exit %s)\n' "${labels[$index]}" "$pipeline_exit"
   else
-    printf '%-36s FAIL (false acceptance)\n' "$name"
+    status=fail
     ((failures += 1))
+    printf '%-40s FAIL (false acceptance or no evidence)\n' "${labels[$index]}"
   fi
-}
-
-# A: real Godot parse failure; the critical stage returns non-zero.
-cp -a "$repo_root/fixtures/godot-smoke" "$temp_root/broken-gdscript"
-printf 'extends SceneTree\nfunc definitely broken syntax\n' >"$temp_root/broken-gdscript/validate.gd"
-timeout 30 "$godot_bin" --headless --path "$temp_root/broken-gdscript" --script validate.gd >"$temp_root/broken.txt" 2>&1
-broken_godot_code=$?
-if [[ $broken_godot_code -ne 0 ]] && grep -Fq 'Parse Error' "$temp_root/broken.txt"; then
-  broken_pipeline_code=$broken_godot_code
-  broken_detected=true
-else
-  broken_pipeline_code=0
-  broken_detected=false
-fi
-broken_excerpt=$(tail -n 8 "$temp_root/broken.txt")
-report_expected_rejection "A — Broken GDScript" "$broken_detected"
-
-# B: the application exits zero and reports a wrong token; exact-token validation fails.
-cp -a "$repo_root/fixtures/godot-smoke" "$temp_root/wrong-token"
-sed -i 's/GF001_INITIAL/GF001_WRONG/' "$temp_root/wrong-token/automation_target.gd"
-timeout 30 "$godot_bin" --headless --path "$temp_root/wrong-token" -- --runtime-test >"$temp_root/wrong-token.txt" 2>&1
-wrong_application_code=$?
-gf001_require_marker "$temp_root/wrong-token.txt" GAME_FOUNDRY_RUNTIME_OK
-wrong_runtime_marker_code=$?
-gf001_require_marker "$temp_root/wrong-token.txt" GAME_FOUNDRY_TOKEN=GF001_EXPECTED
-wrong_token_validation_code=$?
-if [[ $wrong_application_code -eq 0 && $wrong_runtime_marker_code -eq 0 && $wrong_token_validation_code -ne 0 ]]; then
-  wrong_pipeline_code=1
-  wrong_detected=true
-else
-  wrong_pipeline_code=0
-  wrong_detected=false
-fi
-wrong_excerpt=$(tail -n 8 "$temp_root/wrong-token.txt")
-report_expected_rejection "B — Wrong mutation token" "$wrong_detected"
-
-# C: both the allowed target and an unauthorized harmless file change.
-git -C "$repo_root" worktree add --detach "$scope_worktree" HEAD >/dev/null 2>&1
-sed -i 's/GF001_INITIAL/GF001_SCOPE_TEST/' "$scope_worktree/fixtures/godot-smoke/automation_target.gd"
-printf '\nGF-001 unauthorized scope test\n' >>"$scope_worktree/README.md"
-mapfile -t scope_changed < <(git -C "$scope_worktree" status --porcelain=v1 | sed -E 's/^.. //' | sort)
-gf001_verify_scope "$scope_worktree" fixtures/godot-smoke/automation_target.gd
-scope_validation_code=$?
-if [[ $scope_validation_code -ne 0 ]] && printf '%s\n' "${scope_changed[@]}" | grep -Fxq README.md && printf '%s\n' "${scope_changed[@]}" | grep -Fxq fixtures/godot-smoke/automation_target.gd; then
-  scope_pipeline_code=1
-  scope_detected=true
-else
-  scope_pipeline_code=0
-  scope_detected=false
-fi
-scope_changed_json=$(printf '%s\n' "${scope_changed[@]}" | jq -Rsc 'split("\n") | map(select(length > 0))')
-report_expected_rejection "C — Unauthorized source change" "$scope_detected"
-git -C "$repo_root" worktree remove --force "$scope_worktree" >/dev/null 2>&1
-
-# D: a genuinely nonexistent PNG must fail the visual validator.
-missing_path="$temp_root/nonexistent-screenshot.png"
-gf001_validate_png "$missing_path" 640 360
-missing_validation_code=$?
-if [[ ! -e $missing_path && $missing_validation_code -ne 0 ]]; then
-  missing_pipeline_code=1
-  missing_detected=true
-else
-  missing_pipeline_code=0
-  missing_detected=false
-fi
-report_expected_rejection "D — Missing screenshot" "$missing_detected"
+  jq --arg status "$status" --argjson pipeline_exit "$pipeline_exit" \
+    '. + {negative_test_status:$status,pipeline_exit_code:$pipeline_exit}' "$evidence" >"$temp_root/$fault.result.json" 2>/dev/null ||
+    jq -n --arg fault "$fault" --arg status "$status" --argjson pipeline_exit "$pipeline_exit" \
+      '{fault:$fault,negative_test_status:$status,pipeline_exit_code:$pipeline_exit,evidence_error:true}' >"$temp_root/$fault.result.json"
+done
 
 completed_at=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
 overall=pass
 ((failures > 0)) && overall=fail
-
-jq -n \
+jq -s \
   --arg status "$overall" --arg started_at "$started_at" --arg completed_at "$completed_at" \
-  --argjson broken_godot_code "$broken_godot_code" --argjson broken_pipeline_code "$broken_pipeline_code" --arg broken_excerpt "$broken_excerpt" --argjson broken_detected "$broken_detected" \
-  --argjson wrong_application_code "$wrong_application_code" --argjson wrong_pipeline_code "$wrong_pipeline_code" --arg wrong_excerpt "$wrong_excerpt" --argjson wrong_detected "$wrong_detected" \
-  --argjson scope_pipeline_code "$scope_pipeline_code" --argjson scope_detected "$scope_detected" --argjson scope_changed "$scope_changed_json" \
-  --argjson missing_pipeline_code "$missing_pipeline_code" --argjson missing_detected "$missing_detected" --arg missing_path "$missing_path" \
-  '{slice:"GF-001",status:$status,started_at:$started_at,completed_at:$completed_at,semantics:"A negative-test PASS means the injected fault was correctly rejected.",negative_tests:{broken_gdscript:{status:(if $broken_detected then "pass" else "fail" end),expected_failure:"Godot parse/static validation failure",actual_failure:$broken_detected,godot_exit_code:$broken_godot_code,pipeline_exit_code:$broken_pipeline_code,relevant_log:$broken_excerpt},wrong_token:{status:(if $wrong_detected then "pass" else "fail" end),expected_token:"GF001_EXPECTED",actual_token:"GF001_WRONG",application_exit_code:$wrong_application_code,runtime_marker_present:true,pipeline_exit_code:$wrong_pipeline_code,relevant_log:$wrong_excerpt},unauthorized_change:{status:(if $scope_detected then "pass" else "fail" end),allowed_files:["fixtures/godot-smoke/automation_target.gd"],changed_files:$scope_changed,unexpected_files:["README.md"],scope_result:"fail",pipeline_exit_code:$scope_pipeline_code},missing_screenshot:{status:(if $missing_detected then "pass" else "fail" end),path:$missing_path,screenshot_exists:false,visual_stage:"fail",pipeline_exit_code:$missing_pipeline_code}}}' >"$report_json"
+  '{slice:"GF-002",status:$status,started_at:$started_at,completed_at:$completed_at,semantics:"A negative-test PASS means the shared production gate returned non-zero for the injected fault.",faults:.}' \
+  "$temp_root"/*.result.json >"$report_json"
 
 {
-  printf '# GF-001 negative-test evidence\n\n'
-  printf 'A negative-test **PASS** means the injected defect was correctly rejected.\n\n'
-  printf '| Test | Detection | Critical pipeline exit | Key evidence |\n|---|---:|---:|---|\n'
-  printf '| A — Broken GDScript | %s | %s | Godot exit %s; Parse Error present |\n' "${broken_detected^^}" "$broken_pipeline_code" "$broken_godot_code"
-  printf '| B — Wrong token | %s | %s | Application exit %s; actual GF001_WRONG; expected GF001_EXPECTED |\n' "${wrong_detected^^}" "$wrong_pipeline_code" "$wrong_application_code"
-  printf '| C — Unauthorized change | %s | %s | Allowed target plus unexpected README.md detected |\n' "${scope_detected^^}" "$scope_pipeline_code"
-  printf '| D — Missing screenshot | %s | %s | Nonexistent PNG rejected |\n\n' "${missing_detected^^}" "$missing_pipeline_code"
-  printf 'Overall negative-test evidence: **%s**\n' "${overall^^}"
+  printf '# GF-002 fault-injection evidence\n\n'
+  printf 'A negative-test **PASS** means the shared production acceptance gate returned a real non-zero process exit for the injected fault.\n\n'
+  printf '| Test | Result | Gate exit | Command exit |\n|---|---:|---:|---:|\n'
+  for index in "${!faults[@]}"; do
+    fault=${faults[$index]}
+    result="$temp_root/$fault.result.json"
+    printf '| %s | %s | %s | %s |\n' "${labels[$index]}" \
+      "$(jq -r '.negative_test_status | ascii_upcase' "$result")" \
+      "$(jq -r '.pipeline_exit_code' "$result")" \
+      "$(jq -r '.command_exit_code // "n/a"' "$result")"
+  done
+  printf '\nOverall: **%s**\n' "${overall^^}"
 } >"$report_md"
 
 if ((failures > 0)); then
-  printf '\nGF-001 FAILURE INJECTION: FAIL (%s false acceptances)\n' "$failures"
+  printf '\nGF-002 FAILURE INJECTION: FAIL (%s false acceptances)\n' "$failures"
   exit 1
 fi
-printf '\nGF-001 FAILURE INJECTION: PASS (4/4 faults rejected)\n'
+printf '\nGF-002 FAILURE INJECTION: PASS (5/5 faults rejected)\n'
