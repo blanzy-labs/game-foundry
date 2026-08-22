@@ -36,3 +36,5 @@ Production-gate hardening and fault-injection guidance are documented in [GF-002
 Review the source-controlled [GF-002 evidence summary](reports/gf-002/evidence-summary.md).
 
 The first real game workload is recorded in the [TB-001 evidence summary](reports/tb-001/evidence-summary.md).
+
+The data-driven level factory is recorded in the [TB-002 evidence summary](reports/tb-002/evidence-summary.md).

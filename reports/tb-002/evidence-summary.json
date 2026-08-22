@@ -1,0 +1,90 @@
+{
+  "slice": "TB-002",
+  "name": "Second Flush: Data-Driven Level Generation",
+  "status": "pass",
+  "run_id": "tb002-20260822T224200Z-39afcc",
+  "architecture": {
+    "level_format": "validated restroom-specific JSON",
+    "level_loader": "scripts/level_loader.gd",
+    "runtime_builder": "scripts/restroom.gd",
+    "first_flush": "levels/restroom_001.json",
+    "second_flush": "levels/restroom_002.json",
+    "shared_gameplay_runtime": true,
+    "second_level_script": false,
+    "second_level_scene": false
+  },
+  "pipeline": {
+    "openclaw": "pass",
+    "codex": "pass",
+    "model": "openai/gpt-5.6-sol",
+    "agent_harness": "codex",
+    "godot_validation": "pass",
+    "first_flush_regression": "pass",
+    "second_flush_acceptance": "pass",
+    "data_driven_proof": "pass",
+    "data_file_presence_proof": "pass",
+    "negative_tests": "pass",
+    "screenshots": "pass",
+    "linux_export": "pass",
+    "exported_level_selection": "pass"
+  },
+  "second_flush": {
+    "level_id": "restroom_002",
+    "level_name": "Second Flush",
+    "toilets": 6,
+    "collectible_turds": 5,
+    "empty_toilets": 1,
+    "hud_dynamic": "pass",
+    "exit_lock_unlock": "pass",
+    "heist_completion": "pass"
+  },
+  "data_driven_proof": {
+    "source_level": "restroom_002",
+    "changed_field": "player_spawn",
+    "original_value": [-6.0, 0.05, 6.1],
+    "proof_value": [-8.75, 0.05, 5.25],
+    "runtime_reflected_proof_value": true,
+    "gameplay_code_changed": false,
+    "missing_restroom_002_removed_level": true,
+    "restored_file_restored_level": true
+  },
+  "negative_tests": {
+    "missing_required_field": "pass",
+    "invalid_json": "pass",
+    "objective_mismatch": "pass",
+    "missing_level_file": "pass"
+  },
+  "automation": {
+    "openclaw_codex_seconds": 1772.758,
+    "godot_validation_seconds": 2.918,
+    "build_seconds": 2.623,
+    "final_acceptance_seconds": 11.561,
+    "total_pipeline_seconds": 1892,
+    "human_implementation_interventions": 0,
+    "human_implementation_minutes": 0,
+    "manual_godot_editor_changes": 0,
+    "manual_human_source_changes": 0,
+    "human_implementation_minutes_per_new_level": 0
+  },
+  "artifacts": {
+    "root": "artifacts/tb-002/tb002-20260822T224200Z-39afcc",
+    "first_flush_screenshot": "artifacts/tb-002/tb002-20260822T224200Z-39afcc/first-flush.png",
+    "second_flush_screenshot": "artifacts/tb-002/tb002-20260822T224200Z-39afcc/second-flush.png",
+    "linux_executable": "artifacts/tb-002/tb002-20260822T224200Z-39afcc/build/turd-burglar.x86_64",
+    "linux_pack": "artifacts/tb-002/tb002-20260822T224200Z-39afcc/build/turd-burglar.pck",
+    "manifest": "artifacts/tb-002/tb002-20260822T224200Z-39afcc/manifest.json"
+  },
+  "repository": {
+    "branch": "main",
+    "commit": "ad0919f0eae71d80a55c5726cfc6a7e9670d3607",
+    "remote": "https://github.com/blanzy-labs/turd-burglar.git",
+    "push": "pass",
+    "working_tree": "clean"
+  },
+  "manual_qa": {
+    "status": "pending",
+    "approval_claimed": false
+  },
+  "release_published": false,
+  "tb003_started": false
+}
