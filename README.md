@@ -18,3 +18,14 @@ Current status: **GF-000 — prerequisites/bootstrap**.
 
 See [the pipeline architecture](docs/architecture/pipeline.md).
 
+## Run end-to-end acceptance
+
+```bash
+./scripts/gf-001-acceptance.sh
+```
+
+Run controlled fail-closed checks with:
+
+```bash
+./scripts/gf-001-failure-tests.sh
+```
