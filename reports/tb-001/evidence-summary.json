@@ -1,0 +1,64 @@
+{
+  "slice": "TB-001",
+  "name": "First Flush",
+  "status": "pass_with_warnings",
+  "run_id": "tb001-20260822T220747Z-e07856",
+  "factory": {
+    "gf002_prerequisite": "pass",
+    "openclaw": "pass_with_warning",
+    "codex": "pass",
+    "runtime": "codex",
+    "model": "openai/gpt-5.6-sol",
+    "execution_surface": "gateway-agent",
+    "game_repository_authored_by_agent": true,
+    "warning": "The initial long-running Gateway request reached its client timeout after the implementation commit and acceptance completed; the same-session follow-up returned successfully."
+  },
+  "pipeline": {
+    "godot_static": "pass",
+    "godot_runtime": "pass",
+    "gameplay_tests": "pass",
+    "screenshot": "pass",
+    "linux_export": "pass",
+    "export_runtime": "pass"
+  },
+  "gameplay": {
+    "movement": "pass",
+    "camera": "pass",
+    "toilets": 3,
+    "collectible_turds": 3,
+    "duplicate_prevention": "pass",
+    "hud": "pass",
+    "exit_unlock": "pass",
+    "heist_completion": "pass",
+    "restart": "pass"
+  },
+  "automation": {
+    "human_implementation_interventions": 0,
+    "human_implementation_minutes": 0,
+    "agent_execution_seconds": 1268.707,
+    "godot_validation_seconds": 2.917,
+    "build_seconds": 2.623,
+    "deterministic_acceptance_seconds": 8.859,
+    "total_pipeline_seconds": 1497
+  },
+  "artifacts": {
+    "root": "artifacts/tb-001/tb001-20260822T220747Z-e07856",
+    "start_screenshot": "artifacts/tb-001/tb001-20260822T220747Z-e07856/screenshot-start.png",
+    "completion_screenshot": "artifacts/tb-001/tb001-20260822T220747Z-e07856/screenshot-complete.png",
+    "linux_executable": "artifacts/tb-001/tb001-20260822T220747Z-e07856/build/turd-burglar.x86_64",
+    "manifest": "artifacts/tb-001/tb001-20260822T220747Z-e07856/manifest.json"
+  },
+  "repository": {
+    "branch": "main",
+    "commit": "4d5b3e510268c5af5ae39899a591e43c5c91589d",
+    "remote": "https://github.com/blanzy-labs/turd-burglar.git",
+    "push": "pass",
+    "working_tree": "clean"
+  },
+  "manual_qa": {
+    "status": "pending",
+    "approval_claimed": false
+  },
+  "release_published": false,
+  "tb002_started": false
+}
