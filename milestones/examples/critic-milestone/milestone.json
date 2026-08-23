@@ -1,0 +1,11 @@
+{
+  "id": "GF-CRITIC-M001",
+  "title": "Independent Critic Fixture Milestone",
+  "version": 1,
+  "repository": {"name": "game-foundry", "path": "."},
+  "design": "design.md",
+  "guidelines": "guidelines.md",
+  "tasks": ["tasks/GF-CRITIC-001.json", "tasks/GF-CRITIC-002.json"],
+  "completion_gate": "human_review",
+  "review_policy": {"type": "openai_critic", "required": true, "block_on": ["blocker"]}
+}

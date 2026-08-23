@@ -92,6 +92,8 @@ gf004_test_agent() {
     GF-CHAIN-001) target=fixtures/chained-execution-project/src/marker-001.txt; marker=GAME_FOUNDRY_CHAIN_MARKER_001 ;;
     GF-CHAIN-002) target=fixtures/chained-execution-project/src/marker-002.txt; marker=GAME_FOUNDRY_CHAIN_MARKER_002 ;;
     GF-CHAIN-003) target=fixtures/chained-execution-project/src/marker-003.txt; marker=GAME_FOUNDRY_CHAIN_MARKER_003 ;;
+    GF-CRITIC-001) target=fixtures/critic-project/src/marker-001.txt; marker=REQUIRED_CRITIC_MARKER ;;
+    GF-CRITIC-002) target=fixtures/critic-project/src/marker-002.txt; marker=REQUIRED_CRITIC_MARKER_002 ;;
     *) return 1 ;;
   esac
   GF004_OPENCLAW_EXIT=0
@@ -130,6 +132,87 @@ gf004_emit_no_work() {
   fi
 }
 
+gf004_critic_preflight() {
+  [[ $GF_REVIEW_REQUIRED == true ]] || return 0
+  [[ $GF_REVIEW_TYPE == openai_critic ]] || { GF004_CRITIC_ERROR='unsupported required review policy'; return 1; }
+  [[ -x $GF_CONTROL_ROOT/scripts/gf-openai-critic.py && -f $GF_SCHEMA_ROOT/critic-response.schema.json ]] || { GF004_CRITIC_ERROR='critic helper or schema is missing'; return 1; }
+  jq -e . "$GF_SCHEMA_ROOT/critic-response.schema.json" >/dev/null 2>&1 || { GF004_CRITIC_ERROR='critic response schema is invalid'; return 1; }
+  [[ -n ${GF_OPENAI_CRITIC_MODEL:-} ]] || { GF004_CRITIC_ERROR='GF_OPENAI_CRITIC_MODEL is required'; return 1; }
+  [[ ${GF_OPENAI_CRITIC_TIMEOUT_SECONDS:-60} =~ ^[1-9][0-9]*$ ]] || { GF004_CRITIC_ERROR='critic timeout must be a positive integer'; return 1; }
+  [[ ${GF_OPENAI_CRITIC_MAX_EVIDENCE_BYTES:-262144} =~ ^[1-9][0-9]*$ ]] || { GF004_CRITIC_ERROR='critic evidence limit must be a positive integer'; return 1; }
+  if [[ -z ${OPENAI_API_KEY:-} && !( ${GF_GF006_ENABLE_TEST_HOOKS:-0} == 1 && -n ${GF_GF006_CRITIC_FAULT:-} ) ]]; then
+    GF004_CRITIC_ERROR='OPENAI_API_KEY is required for the configured critic'
+    return 1
+  fi
+}
+
+gf004_build_critic_evidence() {
+  local task_file=$1 validator_abs=$2 evidence_file=$3 changed_json allowed_json validation_json
+  changed_json=$(printf '%s\n' "${GF004_CHANGED_FILES[@]:-}" | jq -Rsc 'split("\n") | map(select(length > 0))')
+  allowed_json=$(printf '%s\n' "${GF004_SCOPE_PATTERNS[@]:-}" | jq -Rsc 'split("\n") | map(select(length > 0))')
+  validation_json=$(jq '.validation' "$task_file")
+  jq -n \
+    --arg milestone_id "$GF004_MILESTONE" --arg task_id "$GF004_TASK" --arg run_id "$GF004_RUN_ID" \
+    --arg design_sha256 "$(gf_sha256 "$GF_DESIGN")" --rawfile design "$GF_DESIGN" --rawfile guidelines "$GF_GUIDELINES" \
+    --slurpfile task "$task_file" --rawfile task_prompt "$GF004_ARTIFACT_DIR/prompt.md" --rawfile patch "$GF004_ARTIFACT_DIR/agent.patch" \
+    --argjson changed_files "$changed_json" --argjson allowed_scope "$allowed_json" --slurpfile scope "$GF004_ARTIFACT_DIR/scope.json" \
+    --arg validator_path "$GF004_VALIDATOR_REL" --arg validator_sha256 "$(gf_sha256 "$validator_abs")" --argjson validator_contract "$validation_json" \
+    --arg validator_integrity "$([[ $GF004_VALIDATOR_PRE == "$GF004_VALIDATOR_POST" ]] && printf pass || printf fail)" \
+    --argjson validator_exit "$GF004_VALIDATION_EXIT" --argjson success_markers "$(printf '%s\n' "${GF004_MARKERS[@]:-}" | jq -Rsc 'split("\n") | map(select(length > 0))')" \
+    --rawfile validation_stdout "$GF004_ARTIFACT_DIR/validation.stdout.log" --rawfile validation_stderr "$GF004_ARTIFACT_DIR/validation.stderr.log" \
+    --arg pre_task_commit "$GF004_PRE_COMMIT" \
+    '{milestone_id:$milestone_id,task_id:$task_id,run_id:$run_id,pre_task_accepted_commit:$pre_task_commit,evidence:{
+      DESIGN:{sha256:$design_sha256,text:$design},GUIDELINES:{text:$guidelines},TASK:$task[0],TASK_PROMPT:{text:$task_prompt},PATCH:{text:$patch},
+      CHANGED_FILES:{paths:$changed_files},SCOPE_RESULT:{allowed_scope:$allowed_scope,result:$scope[0]},
+      VALIDATOR:{path:$validator_path,sha256:$validator_sha256,contract:$validator_contract,integrity:$validator_integrity},
+      VALIDATION_RESULT:{exit_code:$validator_exit,required_success_markers:$success_markers},
+      VALIDATION_LOG:{stdout:$validation_stdout,stderr:$validation_stderr}
+    }}' >"$evidence_file"
+}
+
+gf004_run_critic() {
+  local task_file=$1 validator_abs=$2 critic_dir evidence_file before_status before_patch before_branch before_state after_status after_patch after_branch after_state critic_code max_bytes
+  critic_dir="$GF004_ARTIFACT_DIR/critic"
+  evidence_file="$critic_dir/evidence.json"
+  mkdir -p "$critic_dir"
+  gf004_build_critic_evidence "$task_file" "$validator_abs" "$evidence_file" || { GF004_CRITIC_ERROR='critic evidence construction failed'; return 4; }
+  max_bytes=${GF_OPENAI_CRITIC_MAX_EVIDENCE_BYTES:-262144}
+  if [[ $(wc -c <"$evidence_file") -gt $max_bytes ]]; then GF004_CRITIC_ERROR='CRITIC_EVIDENCE_TOO_LARGE'; return 4; fi
+  before_status=$(git -C "$GF004_WORKSPACE" status --porcelain=v1 --untracked-files=all | sha256sum | cut -d' ' -f1)
+  before_patch=$(git -C "$GF004_WORKSPACE" diff --binary | sha256sum | cut -d' ' -f1)
+  before_branch=$(git -C "$GF004_REPO" rev-parse "$GF004_EXECUTION_BRANCH")
+  before_state=$(gf_sha256 "$GF004_STATE_FILE")
+  GF004_CRITIC_CALLS=1
+  "$GF_CONTROL_ROOT/scripts/gf-openai-critic.py" "$evidence_file" "$GF_SCHEMA_ROOT/critic-response.schema.json" "$critic_dir"
+  critic_code=$?
+  after_status=$(git -C "$GF004_WORKSPACE" status --porcelain=v1 --untracked-files=all | sha256sum | cut -d' ' -f1)
+  after_patch=$(git -C "$GF004_WORKSPACE" diff --binary | sha256sum | cut -d' ' -f1)
+  after_branch=$(git -C "$GF004_REPO" rev-parse "$GF004_EXECUTION_BRANCH")
+  after_state=$(gf_sha256 "$GF004_STATE_FILE")
+  jq -n --arg before_status "$before_status" --arg after_status "$after_status" --arg before_patch "$before_patch" --arg after_patch "$after_patch" \
+    --arg before_branch "$before_branch" --arg after_branch "$after_branch" --arg before_state "$before_state" --arg after_state "$after_state" \
+    '{source_status_unchanged:($before_status==$after_status),candidate_patch_unchanged:($before_patch==$after_patch),execution_branch_unchanged:($before_branch==$after_branch),milestone_state_unchanged:($before_state==$after_state),before:{status_sha256:$before_status,patch_sha256:$before_patch,branch:$before_branch,state_sha256:$before_state},after:{status_sha256:$after_status,patch_sha256:$after_patch,branch:$after_branch,state_sha256:$after_state}}' \
+    >"$critic_dir/read-only-proof.json"
+  if ! jq -e '.source_status_unchanged and .candidate_patch_unchanged and .execution_branch_unchanged and .milestone_state_unchanged' "$critic_dir/read-only-proof.json" >/dev/null; then
+    GF004_CRITIC_ERROR='critic read-only boundary changed source, branch, or state'
+    return 4
+  fi
+  [[ -f $critic_dir/result.json ]] || { GF004_CRITIC_ERROR='critic result artifact is missing'; return 4; }
+  GF004_CRITIC_STATUS=$(jq -r '.status' "$critic_dir/result.json")
+  GF004_CRITIC_MODEL=$(jq -r '.model // ""' "$critic_dir/result.json")
+  GF004_CRITIC_RESPONSE_ID=$(jq -r '.response_id // ""' "$critic_dir/result.json")
+  GF004_CRITIC_BLOCKERS=$(jq -r '.finding_counts.blocker // 0' "$critic_dir/result.json")
+  GF004_CRITIC_WARNINGS=$(jq -r '.finding_counts.warning // 0' "$critic_dir/result.json")
+  GF004_CRITIC_OBSERVATIONS=$(jq -r '.finding_counts.observation // 0' "$critic_dir/result.json")
+  GF004_CRITIC_DURATION=$(jq -r '.duration_seconds // 0' "$critic_dir/result.json")
+  GF004_CRITIC_INPUT_TOKENS=$(jq -r '.usage.input_tokens // 0' "$critic_dir/result.json")
+  GF004_CRITIC_OUTPUT_TOKENS=$(jq -r '.usage.output_tokens // 0' "$critic_dir/result.json")
+  GF004_CRITIC_ERROR=$(jq -r '.error_type // ""' "$critic_dir/result.json")
+  [[ $critic_code -eq 0 && $GF004_CRITIC_STATUS == pass ]] && return 0
+  [[ $critic_code -eq 3 && $GF004_CRITIC_STATUS == block ]] && return 3
+  return 4
+}
+
 gf004_write_result() {
   local file=$1 result=$2 reason=$3 next_task=$4
   local changed_json markers_json
@@ -141,16 +224,22 @@ gf004_write_result() {
     --arg validator_status "$GF004_VALIDATOR_STATUS" --arg validator_path "$GF004_VALIDATOR_REL" --arg validator_pre "$GF004_VALIDATOR_PRE" --arg validator_post "$GF004_VALIDATOR_POST" \
     --arg pre_commit "$GF004_PRE_COMMIT" --arg accepted_commit "$GF004_ACCEPTED_COMMIT" --arg execution_branch "$GF004_EXECUTION_BRANCH" --arg next_task "$next_task" \
     --arg evidence "$GF004_ARTIFACT_REL" --argjson attempt "$GF004_ATTEMPT" --argjson max_attempts "$GF004_MAX_ATTEMPTS" \
+    --argjson critic_required "$GF004_CRITIC_REQUIRED" --arg critic_status "$GF004_CRITIC_STATUS" --arg critic_model "$GF004_CRITIC_MODEL" \
+    --arg critic_response_id "$GF004_CRITIC_RESPONSE_ID" --arg critic_error "$GF004_CRITIC_ERROR" --arg critic_evidence "$GF004_CRITIC_EVIDENCE_REL" \
+    --argjson critic_calls "$GF004_CRITIC_CALLS" --argjson critic_blockers "$GF004_CRITIC_BLOCKERS" --argjson critic_warnings "$GF004_CRITIC_WARNINGS" \
+    --argjson critic_observations "$GF004_CRITIC_OBSERVATIONS" --argjson critic_duration "$GF004_CRITIC_DURATION" \
+    --argjson critic_input_tokens "$GF004_CRITIC_INPUT_TOKENS" --argjson critic_output_tokens "$GF004_CRITIC_OUTPUT_TOKENS" \
     --argjson openclaw_exit "$GF004_OPENCLAW_EXIT" --argjson validation_exit "$GF004_VALIDATION_EXIT" --argjson changed_files "$changed_json" --argjson markers "$markers_json" \
     --argjson codex_invocations "$GF004_CODEX_INVOCATIONS" --argjson selection "$GF004_T_SELECTION" --argjson prompt "$GF004_T_PROMPT" \
     --argjson agent "$GF004_T_AGENT" --argjson scope "$GF004_T_SCOPE" --argjson validation "$GF004_T_VALIDATION" --argjson commit "$GF004_T_COMMIT" \
-    --argjson state "$GF004_T_STATE" --argjson cleanup "$GF004_T_CLEANUP" --argjson total "$GF004_T_TOTAL" \
+    --argjson critic_time "$GF004_T_CRITIC" --argjson state "$GF004_T_STATE" --argjson cleanup "$GF004_T_CLEANUP" --argjson total "$GF004_T_TOTAL" \
     '{milestone_id:$milestone_id,task_id:$task_id,run_id:$run_id,attempt:$attempt,max_attempts:$max_attempts,result:$result,failure_reason:$reason,
       agent:{orchestrator:"openclaw",runtime:"codex",exit_code:$openclaw_exit,runtime_status:$runtime_status,runtime_evidence:$runtime_evidence},
       source:{base_commit:$pre_commit,accepted_commit:(if $accepted_commit=="" then null else $accepted_commit end),execution_branch:$execution_branch,changed_files:$changed_files,scope:$scope_status},
       validation:{status:$validator_status,path:$validator_path,pre_sha256:$validator_pre,post_sha256:$validator_post,exit_code:$validation_exit,success_markers:$markers},
+      critic:{required:$critic_required,status:$critic_status,model:(if $critic_model=="" then null else $critic_model end),response_id:(if $critic_response_id=="" then null else $critic_response_id end),blockers:$critic_blockers,warnings:$critic_warnings,observations:$critic_observations,error:(if $critic_error=="" then null else $critic_error end),evidence_path:(if $critic_evidence=="" then null else $critic_evidence end),calls:$critic_calls,duration_seconds:$critic_duration,input_tokens:$critic_input_tokens,output_tokens:$critic_output_tokens},
       state:{task:$result,next_task:(if $next_task=="" then null else $next_task end)},evidence_path:$evidence,codex_invocations:$codex_invocations,human_interventions:0,
-      timing_seconds:{task_selection:$selection,prompt_render:$prompt,openclaw_codex:$agent,scope_validation:$scope,deterministic_validation:$validation,commit:$commit,state_update:$state,cleanup:$cleanup,total:$total}}' >"$file"
+      timing_seconds:{task_selection:$selection,prompt_render:$prompt,openclaw_codex:$agent,scope_validation:$scope,deterministic_validation:$validation,critic:$critic_time,commit:$commit,state_update:$state,cleanup:$cleanup,total:$total}}' >"$file"
 }
 
 gf004_fail_execution() {
@@ -163,8 +252,8 @@ gf004_fail_execution() {
   gf004_restore_agent_workspace
   GF004_T_CLEANUP=$(gf004_elapsed "$cleanup_start" "$(date +%s%N)")
   gf_transition_task "$GF004_MILESTONE" "$GF004_TASK" fail execution_failure || true
-  gf_atomic_state_update "$GF004_STATE_FILE" '.tasks[$task] += {last_run_id:$run,last_result:"fail",last_evidence:$evidence,failure_reason:$reason}' \
-    --arg task "$GF004_TASK" --arg run "$GF004_RUN_ID" --arg evidence "$GF004_ARTIFACT_REL" --arg reason "$reason" || true
+  gf_atomic_state_update "$GF004_STATE_FILE" '.tasks[$task] += {last_run_id:$run,last_result:"fail",last_evidence:$evidence,failure_reason:$reason,critic_status:$critic_status}' \
+    --arg task "$GF004_TASK" --arg run "$GF004_RUN_ID" --arg evidence "$GF004_ARTIFACT_REL" --arg reason "$reason" --arg critic_status "$GF004_CRITIC_STATUS" || true
   GF004_T_STATE=$(gf004_elapsed "$GF004_STATE_START" "$(date +%s%N)")
   next_result=$(gf_next_result "$GF004_MILESTONE")
   GF004_T_TOTAL=$(gf004_elapsed "$GF004_TOTAL_START" "$(date +%s%N)")
@@ -218,10 +307,22 @@ gf_execute_one() {
   GF004_AGENT_LINK='' GF004_AGENT_INDEX='' GF004_AGENT_ORIGINAL_WORKSPACE=''
   GF004_RUNTIME_STATUS=not_run GF004_RUNTIME_EVIDENCE='' GF004_SCOPE_STATUS=not_run GF004_VALIDATOR_STATUS=not_run
   GF004_VALIDATOR_REL=$(jq -r '.validation.path' "$task_file") GF004_VALIDATOR_PRE='' GF004_VALIDATOR_POST=''
-  GF004_CODEX_INVOCATIONS=0 GF004_T_PROMPT=0 GF004_T_AGENT=0 GF004_T_SCOPE=0 GF004_T_VALIDATION=0 GF004_T_COMMIT=0 GF004_T_STATE=0 GF004_T_CLEANUP=0 GF004_T_TOTAL=0
+  GF004_CRITIC_REQUIRED=$GF_REVIEW_REQUIRED GF004_CRITIC_STATUS=disabled GF004_CRITIC_MODEL='' GF004_CRITIC_RESPONSE_ID='' GF004_CRITIC_ERROR='' GF004_CRITIC_EVIDENCE_REL=''
+  GF004_CRITIC_CALLS=0 GF004_CRITIC_BLOCKERS=0 GF004_CRITIC_WARNINGS=0 GF004_CRITIC_OBSERVATIONS=0 GF004_CRITIC_DURATION=0 GF004_CRITIC_INPUT_TOKENS=0 GF004_CRITIC_OUTPUT_TOKENS=0
+  GF004_CODEX_INVOCATIONS=0 GF004_T_PROMPT=0 GF004_T_AGENT=0 GF004_T_SCOPE=0 GF004_T_VALIDATION=0 GF004_T_CRITIC=0 GF004_T_COMMIT=0 GF004_T_STATE=0 GF004_T_CLEANUP=0 GF004_T_TOTAL=0
   declare -a GF004_CHANGED_FILES=() GF004_MARKERS=() GF004_SCOPE_PATTERNS=()
   mapfile -t GF004_SCOPE_PATTERNS < <(jq -r '.allowed_scope[]' "$task_file")
   mapfile -t GF004_MARKERS < <(jq -r '.validation.success_markers[]' "$task_file")
+  [[ $GF004_CRITIC_REQUIRED == true ]] && GF004_CRITIC_STATUS=not_run
+
+  if ! gf004_critic_preflight; then
+    if $json_output; then
+      jq -n --arg milestone_id "$milestone_id" --arg task_id "$GF004_TASK" --arg error "$GF004_CRITIC_ERROR" '{milestone_id:$milestone_id,task_id:$task_id,result:"execution_refused",failure_reason:"CRITIC_ERROR",critic:{required:true,status:"error",error:$error,calls:0},codex_invocations:0}'
+    else
+      printf 'EXECUTION REFUSED: CRITIC_ERROR: %s\n' "$GF004_CRITIC_ERROR" >&2
+    fi
+    return 1
+  fi
 
   gf_transition_task "$milestone_id" "$GF004_TASK" running execution_claim || return 1
   gf_atomic_state_update "$GF004_STATE_FILE" '.tasks[$task] += {last_run_id:$run,last_result:"running",last_evidence:$evidence,started_at:$started,source_base_commit:$head}' \
@@ -262,6 +363,10 @@ gf_execute_one() {
   GF004_RUNTIME_STATUS=pass
   GF004_RUNTIME_EVIDENCE='OpenClaw result/audit or Gateway evidence recorded Codex runtime ownership'
 
+  if [[ ${GF_GF006_ENABLE_TEST_HOOKS:-0} == 1 && ${GF_GF006_INJECT_FORBIDDEN_MARKER:-0} == 1 ]]; then
+    printf 'FORBIDDEN_DESIGN_MARKER\n' >>"$GF004_WORKSPACE/fixtures/critic-project/src/marker-001.txt"
+  fi
+
   scope_start=$(date +%s%N)
   mapfile -t GF004_CHANGED_FILES < <(gf004_changed_files "$GF004_WORKSPACE")
   for changed in "${GF004_CHANGED_FILES[@]}"; do
@@ -288,6 +393,16 @@ gf_execute_one() {
   if [[ $GF004_VALIDATION_EXIT -eq 0 ]] && $markers_ok; then GF004_VALIDATOR_STATUS=pass; else GF004_VALIDATOR_STATUS=fail; fi
   GF004_T_VALIDATION=$(gf004_elapsed "$validation_start" "$(date +%s%N)")
   [[ $GF004_VALIDATOR_STATUS == pass ]] || { gf004_fail_execution "deterministic validation failed (exit $GF004_VALIDATION_EXIT, markers=$markers_ok)"; return 1; }
+
+  if [[ $GF004_CRITIC_REQUIRED == true ]]; then
+    critic_start=$(date +%s%N)
+    GF004_CRITIC_EVIDENCE_REL="$GF004_ARTIFACT_REL/critic"
+    gf004_run_critic "$task_file" "$validator_abs"
+    critic_code=$?
+    GF004_T_CRITIC=$(gf004_elapsed "$critic_start" "$(date +%s%N)")
+    if [[ $critic_code -eq 3 ]]; then gf004_fail_execution 'CRITIC_BLOCK: independent critic returned a blocker'; return 1; fi
+    if [[ $critic_code -ne 0 ]]; then GF004_CRITIC_STATUS=error; gf004_fail_execution "CRITIC_ERROR: ${GF004_CRITIC_ERROR:-invalid critic result}"; return 1; fi
+  fi
 
   commit_start=$(date +%s%N)
   git -C "$GF004_WORKSPACE" reset >/dev/null || { gf004_fail_execution 'could not clear intent-to-add index'; return 1; }
@@ -317,8 +432,8 @@ gf_execute_one() {
 
   state_start=$(date +%s%N)
   if ! gf_transition_task "$milestone_id" "$GF004_TASK" pass deterministic_acceptance ||
-     ! gf_atomic_state_update "$GF004_STATE_FILE" '.source.head_commit=$commit | .tasks[$task] += {last_run_id:$run,accepted_commit:$commit,last_result:"pass",last_evidence:$evidence}' \
-       --arg task "$GF004_TASK" --arg run "$GF004_RUN_ID" --arg commit "$GF004_ACCEPTED_COMMIT" --arg evidence "$GF004_ARTIFACT_REL"; then
+     ! gf_atomic_state_update "$GF004_STATE_FILE" '.source.head_commit=$commit | .tasks[$task] += {last_run_id:$run,accepted_commit:$commit,last_result:"pass",last_evidence:$evidence,critic_status:$critic_status}' \
+       --arg task "$GF004_TASK" --arg run "$GF004_RUN_ID" --arg commit "$GF004_ACCEPTED_COMMIT" --arg evidence "$GF004_ARTIFACT_REL" --arg critic_status "$GF004_CRITIC_STATUS"; then
     cp "$state_backup" "$GF004_STATE_FILE"
     git -C "$GF004_REPO" branch -f "$GF004_EXECUTION_BRANCH" "$GF004_PRE_COMMIT" >/dev/null 2>&1 || true
     GF004_ACCEPTED_COMMIT=''

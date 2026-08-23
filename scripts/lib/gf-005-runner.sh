@@ -23,7 +23,7 @@ gf005_queue_json() {
 
 gf005_finalize() {
   local stop_reason=$1 exit_code=$2 completed_at total_seconds attempted passed failed invocations average throughput
-  local openclaw_seconds validation_seconds commit_seconds state_seconds queue_json
+  local openclaw_seconds validation_seconds commit_seconds state_seconds queue_json critic_calls critic_passes critic_blocks critic_errors critic_seconds critic_average critic_input critic_output
   completed_at=$(gf_now)
   total_seconds=$(gf005_elapsed "$GF005_START_NS" "$(date +%s%N)")
   attempted=$(jq 'length' "$GF005_TASK_RESULTS")
@@ -34,6 +34,14 @@ gf005_finalize() {
   validation_seconds=$(jq '[.[].timing_seconds.deterministic_validation // 0] | add // 0' "$GF005_TASK_RESULTS")
   commit_seconds=$(jq '[.[].timing_seconds.commit // 0] | add // 0' "$GF005_TASK_RESULTS")
   state_seconds=$(jq '[.[].timing_seconds.state_update // 0] | add // 0' "$GF005_TASK_RESULTS")
+  critic_calls=$(jq '[.[].critic.calls // 0] | add // 0' "$GF005_TASK_RESULTS")
+  critic_passes=$(jq '[.[] | select(.critic.status == "pass")] | length' "$GF005_TASK_RESULTS")
+  critic_blocks=$(jq '[.[] | select(.critic.status == "block")] | length' "$GF005_TASK_RESULTS")
+  critic_errors=$(jq '[.[] | select(.critic.status == "error")] | length' "$GF005_TASK_RESULTS")
+  critic_seconds=$(jq '[.[].critic.duration_seconds // 0] | add // 0' "$GF005_TASK_RESULTS")
+  critic_input=$(jq '[.[].critic.input_tokens // 0] | add // 0' "$GF005_TASK_RESULTS")
+  critic_output=$(jq '[.[].critic.output_tokens // 0] | add // 0' "$GF005_TASK_RESULTS")
+  critic_average=$(awk -v total="$critic_seconds" -v count="$critic_calls" 'BEGIN {if(count==0) print 0; else printf "%.6f",total/count}')
   average=$(awk -v total="$openclaw_seconds" -v count="$attempted" 'BEGIN {if(count==0) print 0; else printf "%.6f",total/count}')
   throughput=$(awk -v count="$passed" -v seconds="$total_seconds" 'BEGIN {if(seconds==0) print 0; else printf "%.6f",count*3600/seconds}')
   queue_json=$(gf005_queue_json "$GF005_STATE_FILE")
@@ -43,7 +51,9 @@ gf005_finalize() {
     --argjson passed "$passed" --argjson failed "$failed" --argjson invocations "$invocations" --argjson executions "$(cat "$GF005_TASK_RESULTS")" \
     --argjson queue_after "$queue_json" --argjson total "$total_seconds" --argjson average "$average" --argjson throughput "$throughput" \
     --argjson openclaw "$openclaw_seconds" --argjson validation "$validation_seconds" --argjson commit "$commit_seconds" --argjson state "$state_seconds" \
-    '{slice:$slice,run_id:$run_id,milestone_id:$milestone_id,started_at:$started_at,completed_at:$completed_at,bounds:{max_tasks:$max_tasks,max_minutes:$max_minutes},attempted_tasks:$attempted,passed_tasks:$passed,failed_tasks:$failed,executions:$executions,stop_reason:$stop_reason,queue_after:$queue_after,codex_invocations:$invocations,human_interventions:0,metrics_seconds:{total_bounded_run:$total,average_openclaw_codex_per_attempt:$average,openclaw_codex:$openclaw,deterministic_validation:$validation,commit:$commit,state_transition:$state},fixture_accepted_tasks_per_hour:$throughput}' \
+    --argjson critic_calls "$critic_calls" --argjson critic_passes "$critic_passes" --argjson critic_blocks "$critic_blocks" --argjson critic_errors "$critic_errors" \
+    --argjson critic_seconds "$critic_seconds" --argjson critic_average "$critic_average" --argjson critic_input "$critic_input" --argjson critic_output "$critic_output" \
+    '{slice:$slice,run_id:$run_id,milestone_id:$milestone_id,started_at:$started_at,completed_at:$completed_at,bounds:{max_tasks:$max_tasks,max_minutes:$max_minutes},attempted_tasks:$attempted,passed_tasks:$passed,failed_tasks:$failed,executions:$executions,stop_reason:$stop_reason,queue_after:$queue_after,codex_invocations:$invocations,critic:{calls:$critic_calls,passes:$critic_passes,blocks:$critic_blocks,errors:$critic_errors,duration_seconds:$critic_seconds,average_duration_seconds:$critic_average,input_tokens:$critic_input,output_tokens:$critic_output},human_interventions:0,metrics_seconds:{total_bounded_run:$total,average_openclaw_codex_per_attempt:$average,openclaw_codex:$openclaw,deterministic_validation:$validation,critic:$critic_seconds,commit:$commit,state_transition:$state},fixture_accepted_tasks_per_hour:$throughput}' \
     >"$GF005_ARTIFACT_DIR/run.json"
   cp "$GF005_TASK_RESULTS" "$GF005_ARTIFACT_DIR/task-results.json"
   {

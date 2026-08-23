@@ -45,3 +45,8 @@ Production publication always requires explicit human approval.
 - Newly READY work never overrides configured task or time bounds.
 - Coding agents cannot request or cause the next task to execute.
 - Milestone human gates always terminate automated execution.
+- Deterministic PASS is only a candidate acceptance state when a required critic gate exists.
+- A required critic BLOCK prevents commit and task PASS; a required critic ERROR fails closed.
+- The critic is read-only and may never alter source, tests, milestone state, or commits.
+- Critic warnings and observations do not block acceptance.
+- Coding agents may not influence or rewrite the critic's trusted instruction or response schema.

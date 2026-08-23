@@ -35,7 +35,13 @@ gf_validate_package() {
     (.design | type == "string" and length > 0) and
     (.guidelines | type == "string" and length > 0) and
     (.tasks | type == "array" and length > 0 and all(.[]; type == "string" and length > 0)) and
-    (.completion_gate == "human_review" or .completion_gate == "automated")
+    (.completion_gate == "human_review" or .completion_gate == "automated") and
+    ((has("review_policy") | not) or (
+      (.review_policy | type == "object") and
+      (.review_policy.type == "openai_critic") and
+      (.review_policy.required | type == "boolean") and
+      (.review_policy.block_on == ["blocker"])
+    ))
   ' "$GF_MANIFEST" >/dev/null || { gf_error 'VALIDATION FAIL: milestone contract does not match schema'; return 1; }
 
   GF_ID=$(jq -r '.id' "$GF_MANIFEST")
@@ -43,6 +49,8 @@ gf_validate_package() {
   GF_DESIGN_REL=$(jq -r '.design' "$GF_MANIFEST")
   GF_GUIDELINES_REL=$(jq -r '.guidelines' "$GF_MANIFEST")
   GF_COMPLETION_GATE=$(jq -r '.completion_gate' "$GF_MANIFEST")
+  GF_REVIEW_TYPE=$(jq -r '.review_policy.type // "disabled"' "$GF_MANIFEST")
+  GF_REVIEW_REQUIRED=$(jq -r '.review_policy.required // false' "$GF_MANIFEST")
   GF_DESIGN=$(gf_safe_package_file "$GF_PACKAGE" "$GF_DESIGN_REL") || { gf_error 'VALIDATION FAIL: invalid design path'; return 1; }
   GF_GUIDELINES=$(gf_safe_package_file "$GF_PACKAGE" "$GF_GUIDELINES_REL") || { gf_error 'VALIDATION FAIL: invalid guidelines path'; return 1; }
 

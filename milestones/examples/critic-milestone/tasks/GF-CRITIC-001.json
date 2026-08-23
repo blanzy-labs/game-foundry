@@ -1,0 +1,11 @@
+{
+  "id": "GF-CRITIC-001",
+  "title": "Create critic marker 001",
+  "objective": "Create fixtures/critic-project/src/marker-001.txt containing exactly REQUIRED_CRITIC_MARKER followed by a newline and never FORBIDDEN_DESIGN_MARKER.",
+  "depends_on": [],
+  "allowed_scope": ["fixtures/critic-project/src/marker-001.txt"],
+  "acceptance": ["marker-001.txt contains REQUIRED_CRITIC_MARKER", "the locked design prohibition remains satisfied"],
+  "validation": {"type":"repo_script","path":"fixtures/critic-project/acceptance/validate-task.sh","args":["GF-CRITIC-001"],"timeout_seconds":60,"success_markers":["GF_CRITIC_001_ACCEPTED"]},
+  "retry_policy": {"max_attempts": 2},
+  "on_failure": "retry"
+}
