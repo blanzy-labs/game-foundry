@@ -1,0 +1,380 @@
+{
+  "slice": "GF-005",
+  "status": "pass",
+  "acceptance_id": "gf005-acceptance-20260823T200649Z-000205",
+  "started_at": "2026-08-23T20:06:49Z",
+  "completed_at": "2026-08-23T20:15:08Z",
+  "artifact_dir": "artifacts/gf-005/gf005-acceptance-20260823T200649Z-000205",
+  "two_task_run": {
+    "slice": "GF-005",
+    "run_id": "gf005-20260823T200650Z-464f7b00",
+    "milestone_id": "GF-CHAIN-M001",
+    "started_at": "2026-08-23T20:06:50Z",
+    "completed_at": "2026-08-23T20:09:21Z",
+    "bounds": {
+      "max_tasks": 2,
+      "max_minutes": 30
+    },
+    "attempted_tasks": 2,
+    "passed_tasks": 2,
+    "failed_tasks": 0,
+    "executions": [
+      {
+        "milestone_id": "GF-CHAIN-M001",
+        "task_id": "GF-CHAIN-001",
+        "run_id": "gf004-20260823T200650Z-59173d10",
+        "attempt": 1,
+        "max_attempts": 2,
+        "result": "pass",
+        "failure_reason": "",
+        "agent": {
+          "orchestrator": "openclaw",
+          "runtime": "codex",
+          "exit_code": 0,
+          "runtime_status": "pass",
+          "runtime_evidence": "OpenClaw result/audit or Gateway evidence recorded Codex runtime ownership"
+        },
+        "source": {
+          "base_commit": "1b39cac385d2033b9a9d370b884d28acff93518b",
+          "accepted_commit": "99c6598119ada0a7e0f103ab83d2bcae3b19fb54",
+          "execution_branch": "gf/GF-CHAIN-M001",
+          "changed_files": [
+            "fixtures/chained-execution-project/src/marker-001.txt"
+          ],
+          "scope": "pass"
+        },
+        "validation": {
+          "status": "pass",
+          "path": "fixtures/chained-execution-project/acceptance/validate-task.sh",
+          "pre_sha256": "8d4452b89280baee09325081ad5a2752af8c640379617b6a26c31a01877c0e98",
+          "post_sha256": "8d4452b89280baee09325081ad5a2752af8c640379617b6a26c31a01877c0e98",
+          "exit_code": 0,
+          "success_markers": [
+            "GF_CHAIN_001_ACCEPTED"
+          ]
+        },
+        "state": {
+          "task": "pass",
+          "next_task": "GF-CHAIN-002"
+        },
+        "evidence_path": "artifacts/gf-005/gf005-acceptance-20260823T200649Z-000205/two-task-real/children/GF-CHAIN-M001/GF-CHAIN-001/gf004-20260823T200650Z-59173d10",
+        "codex_invocations": 1,
+        "human_interventions": 0,
+        "timing_seconds": {
+          "task_selection": 0.009614,
+          "prompt_render": 0.045294,
+          "openclaw_codex": 71.970457,
+          "scope_validation": 0.029295,
+          "deterministic_validation": 0.118764,
+          "commit": 0.032192,
+          "state_update": 0.090840,
+          "cleanup": 4.865202,
+          "total": 77.595045
+        }
+      },
+      {
+        "milestone_id": "GF-CHAIN-M001",
+        "task_id": "GF-CHAIN-002",
+        "run_id": "gf004-20260823T200808Z-a4fa4c0c",
+        "attempt": 1,
+        "max_attempts": 2,
+        "result": "pass",
+        "failure_reason": "",
+        "agent": {
+          "orchestrator": "openclaw",
+          "runtime": "codex",
+          "exit_code": 0,
+          "runtime_status": "pass",
+          "runtime_evidence": "OpenClaw result/audit or Gateway evidence recorded Codex runtime ownership"
+        },
+        "source": {
+          "base_commit": "99c6598119ada0a7e0f103ab83d2bcae3b19fb54",
+          "accepted_commit": "839fe781fba5089d43b62b7dbb677311a14d29d8",
+          "execution_branch": "gf/GF-CHAIN-M001",
+          "changed_files": [
+            "fixtures/chained-execution-project/src/marker-002.txt"
+          ],
+          "scope": "pass"
+        },
+        "validation": {
+          "status": "pass",
+          "path": "fixtures/chained-execution-project/acceptance/validate-task.sh",
+          "pre_sha256": "8d4452b89280baee09325081ad5a2752af8c640379617b6a26c31a01877c0e98",
+          "post_sha256": "8d4452b89280baee09325081ad5a2752af8c640379617b6a26c31a01877c0e98",
+          "exit_code": 0,
+          "success_markers": [
+            "GF_CHAIN_002_ACCEPTED"
+          ]
+        },
+        "state": {
+          "task": "pass",
+          "next_task": "GF-CHAIN-003"
+        },
+        "evidence_path": "artifacts/gf-005/gf005-acceptance-20260823T200649Z-000205/two-task-real/children/GF-CHAIN-M001/GF-CHAIN-002/gf004-20260823T200808Z-a4fa4c0c",
+        "codex_invocations": 1,
+        "human_interventions": 0,
+        "timing_seconds": {
+          "task_selection": 0.013581,
+          "prompt_render": 0.046750,
+          "openclaw_codex": 67.149345,
+          "scope_validation": 0.031035,
+          "deterministic_validation": 0.118376,
+          "commit": 0.032636,
+          "state_update": 0.088101,
+          "cleanup": 4.638976,
+          "total": 72.571402
+        }
+      }
+    ],
+    "stop_reason": "TASK_LIMIT",
+    "queue_after": {
+      "milestone_status": "active",
+      "next_task": "GF-CHAIN-003"
+    },
+    "codex_invocations": 2,
+    "human_interventions": 0,
+    "metrics_seconds": {
+      "total_bounded_run": 150.905397,
+      "average_openclaw_codex_per_attempt": 69.559901,
+      "openclaw_codex": 139.119802,
+      "deterministic_validation": 0.23714,
+      "commit": 0.064828,
+      "state_transition": 0.17894100000000002
+    },
+    "fixture_accepted_tasks_per_hour": 47.712011
+  },
+  "human_gate_run": {
+    "slice": "GF-005",
+    "run_id": "gf005-20260823T200921Z-f0610d0d",
+    "milestone_id": "GF-CHAIN-M001",
+    "started_at": "2026-08-23T20:09:21Z",
+    "completed_at": "2026-08-23T20:13:06Z",
+    "bounds": {
+      "max_tasks": 5,
+      "max_minutes": 30
+    },
+    "attempted_tasks": 3,
+    "passed_tasks": 3,
+    "failed_tasks": 0,
+    "executions": [
+      {
+        "milestone_id": "GF-CHAIN-M001",
+        "task_id": "GF-CHAIN-001",
+        "run_id": "gf004-20260823T200922Z-0dc848f7",
+        "attempt": 1,
+        "max_attempts": 2,
+        "result": "pass",
+        "failure_reason": "",
+        "agent": {
+          "orchestrator": "openclaw",
+          "runtime": "codex",
+          "exit_code": 0,
+          "runtime_status": "pass",
+          "runtime_evidence": "OpenClaw result/audit or Gateway evidence recorded Codex runtime ownership"
+        },
+        "source": {
+          "base_commit": "1b39cac385d2033b9a9d370b884d28acff93518b",
+          "accepted_commit": "40842b70a5f26593dfcaf5101bb02620b334d001",
+          "execution_branch": "gf/GF-CHAIN-M001",
+          "changed_files": [
+            "fixtures/chained-execution-project/src/marker-001.txt"
+          ],
+          "scope": "pass"
+        },
+        "validation": {
+          "status": "pass",
+          "path": "fixtures/chained-execution-project/acceptance/validate-task.sh",
+          "pre_sha256": "8d4452b89280baee09325081ad5a2752af8c640379617b6a26c31a01877c0e98",
+          "post_sha256": "8d4452b89280baee09325081ad5a2752af8c640379617b6a26c31a01877c0e98",
+          "exit_code": 0,
+          "success_markers": [
+            "GF_CHAIN_001_ACCEPTED"
+          ]
+        },
+        "state": {
+          "task": "pass",
+          "next_task": "GF-CHAIN-002"
+        },
+        "evidence_path": "artifacts/gf-005/gf005-acceptance-20260823T200649Z-000205/human-gate-real/children/GF-CHAIN-M001/GF-CHAIN-001/gf004-20260823T200922Z-0dc848f7",
+        "codex_invocations": 1,
+        "human_interventions": 0,
+        "timing_seconds": {
+          "task_selection": 0.010787,
+          "prompt_render": 0.044894,
+          "openclaw_codex": 65.999555,
+          "scope_validation": 0.033293,
+          "deterministic_validation": 0.119638,
+          "commit": 0.032493,
+          "state_update": 0.091061,
+          "cleanup": 4.780392,
+          "total": 71.563417
+        }
+      },
+      {
+        "milestone_id": "GF-CHAIN-M001",
+        "task_id": "GF-CHAIN-002",
+        "run_id": "gf004-20260823T201034Z-558baa97",
+        "attempt": 1,
+        "max_attempts": 2,
+        "result": "pass",
+        "failure_reason": "",
+        "agent": {
+          "orchestrator": "openclaw",
+          "runtime": "codex",
+          "exit_code": 0,
+          "runtime_status": "pass",
+          "runtime_evidence": "OpenClaw result/audit or Gateway evidence recorded Codex runtime ownership"
+        },
+        "source": {
+          "base_commit": "40842b70a5f26593dfcaf5101bb02620b334d001",
+          "accepted_commit": "b2720e45374d94500127c4a132bc0031475059bd",
+          "execution_branch": "gf/GF-CHAIN-M001",
+          "changed_files": [
+            "fixtures/chained-execution-project/src/marker-002.txt"
+          ],
+          "scope": "pass"
+        },
+        "validation": {
+          "status": "pass",
+          "path": "fixtures/chained-execution-project/acceptance/validate-task.sh",
+          "pre_sha256": "8d4452b89280baee09325081ad5a2752af8c640379617b6a26c31a01877c0e98",
+          "post_sha256": "8d4452b89280baee09325081ad5a2752af8c640379617b6a26c31a01877c0e98",
+          "exit_code": 0,
+          "success_markers": [
+            "GF_CHAIN_002_ACCEPTED"
+          ]
+        },
+        "state": {
+          "task": "pass",
+          "next_task": "GF-CHAIN-003"
+        },
+        "evidence_path": "artifacts/gf-005/gf005-acceptance-20260823T200649Z-000205/human-gate-real/children/GF-CHAIN-M001/GF-CHAIN-002/gf004-20260823T201034Z-558baa97",
+        "codex_invocations": 1,
+        "human_interventions": 0,
+        "timing_seconds": {
+          "task_selection": 0.013918,
+          "prompt_render": 0.045971,
+          "openclaw_codex": 74.484444,
+          "scope_validation": 0.029252,
+          "deterministic_validation": 0.118416,
+          "commit": 0.033549,
+          "state_update": 0.093265,
+          "cleanup": 4.697516,
+          "total": 79.975216
+        }
+      },
+      {
+        "milestone_id": "GF-CHAIN-M001",
+        "task_id": "GF-CHAIN-003",
+        "run_id": "gf004-20260823T201154Z-ef9c0b61",
+        "attempt": 1,
+        "max_attempts": 2,
+        "result": "pass",
+        "failure_reason": "",
+        "agent": {
+          "orchestrator": "openclaw",
+          "runtime": "codex",
+          "exit_code": 0,
+          "runtime_status": "pass",
+          "runtime_evidence": "OpenClaw result/audit or Gateway evidence recorded Codex runtime ownership"
+        },
+        "source": {
+          "base_commit": "b2720e45374d94500127c4a132bc0031475059bd",
+          "accepted_commit": "9c86b33558668b1e678ea447341dbd5f51f9be2a",
+          "execution_branch": "gf/GF-CHAIN-M001",
+          "changed_files": [
+            "fixtures/chained-execution-project/src/marker-003.txt"
+          ],
+          "scope": "pass"
+        },
+        "validation": {
+          "status": "pass",
+          "path": "fixtures/chained-execution-project/acceptance/validate-task.sh",
+          "pre_sha256": "8d4452b89280baee09325081ad5a2752af8c640379617b6a26c31a01877c0e98",
+          "post_sha256": "8d4452b89280baee09325081ad5a2752af8c640379617b6a26c31a01877c0e98",
+          "exit_code": 0,
+          "success_markers": [
+            "GF_CHAIN_003_ACCEPTED"
+          ]
+        },
+        "state": {
+          "task": "pass",
+          "next_task": null
+        },
+        "evidence_path": "artifacts/gf-005/gf005-acceptance-20260823T200649Z-000205/human-gate-real/children/GF-CHAIN-M001/GF-CHAIN-003/gf004-20260823T201154Z-ef9c0b61",
+        "codex_invocations": 1,
+        "human_interventions": 0,
+        "timing_seconds": {
+          "task_selection": 0.016671,
+          "prompt_render": 0.049811,
+          "openclaw_codex": 65.922110,
+          "scope_validation": 0.031550,
+          "deterministic_validation": 0.117660,
+          "commit": 0.032508,
+          "state_update": 0.068988,
+          "cleanup": 4.696924,
+          "total": 71.408361
+        }
+      }
+    ],
+    "stop_reason": "HUMAN_GATE",
+    "queue_after": {
+      "milestone_status": "pending_human",
+      "next_task": null
+    },
+    "codex_invocations": 3,
+    "human_interventions": 0,
+    "metrics_seconds": {
+      "total_bounded_run": 224.392919,
+      "average_openclaw_codex_per_attempt": 68.802036,
+      "openclaw_codex": 206.406109,
+      "deterministic_validation": 0.355714,
+      "commit": 0.09855,
+      "state_transition": 0.253314
+    },
+    "fixture_accepted_tasks_per_hour": 48.129861
+  },
+  "checks": {
+    "invalid_limits": "pass",
+    "gf003_regression": "pass",
+    "persistence": "pass",
+    "two_task_bound": "pass",
+    "middle_validation_failure": "pass",
+    "time_limit": "pass",
+    "gf004_regression": "pass",
+    "lock_between_tasks": "pass",
+    "source_chain_three_tasks": "pass",
+    "no_ready_blocked": "pass",
+    "source_chain_two_tasks": "pass",
+    "source_stops_before_task_2": "pass",
+    "unauthorized_task_2": "pass",
+    "lock_stops_before_task_2": "pass",
+    "stale_running": "pass",
+    "runner_busy": "pass",
+    "middle_failure_descendants_stop": "pass",
+    "source_between_tasks": "pass",
+    "human_gate": "pass",
+    "unauthorized_no_commit": "pass"
+  },
+  "regression": {
+    "gf003": "pass",
+    "gf004": "pass",
+    "gf002_shared": "pass",
+    "doctor": "pass",
+    "self_test": "pass"
+  },
+  "evidence": {
+    "two_task_parent": "artifacts/gf-005/gf005-acceptance-20260823T200649Z-000205/two-task-real/result.json",
+    "human_gate_parent": "artifacts/gf-005/gf005-acceptance-20260823T200649Z-000205/human-gate-real/result.json",
+    "middle_validation_failure": "artifacts/gf-005/gf005-acceptance-20260823T200649Z-000205/middle_validation_failure/result.json",
+    "unauthorized_task_2": "artifacts/gf-005/gf005-acceptance-20260823T200649Z-000205/unauthorized_task_2/result.json",
+    "lock_between_tasks": "artifacts/gf-005/gf005-acceptance-20260823T200649Z-000205/lock_between_tasks/result.json",
+    "source_between_tasks": "artifacts/gf-005/gf005-acceptance-20260823T200649Z-000205/source_between_tasks/result.json",
+    "time_limit": "artifacts/gf-005/gf005-acceptance-20260823T200649Z-000205/time-limit/result.json",
+    "no_ready": "artifacts/gf-005/gf005-acceptance-20260823T200649Z-000205/no-ready/result.json",
+    "stale_running": "artifacts/gf-005/gf005-acceptance-20260823T200649Z-000205/stale-running/result.json",
+    "gf004_regression": "artifacts/gf-005/gf005-acceptance-20260823T200649Z-000205/regression/gf004-summary.json"
+  },
+  "acceptance_total_seconds": 498.200428,
+  "false_acceptances": 0
+}
