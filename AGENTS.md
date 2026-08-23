@@ -37,3 +37,7 @@ Production publication always requires explicit human approval.
 - A locked milestone must not be silently modified during execution.
 - Dependency order is determined by deterministic Game Foundry state, not by an LLM.
 - Human approval remains required at configured human milestone gates.
+- Coding agents cannot commit accepted milestone work; Game Foundry owns accepted milestone commits.
+- Coding agents cannot modify trusted deterministic validators unless validator development is itself the task and an independent higher-level acceptance authority exists.
+- Task PASS requires deterministic acceptance followed by a Game Foundry state transition.
+- A READY task becoming available does not imply it should be executed in the same invocation.

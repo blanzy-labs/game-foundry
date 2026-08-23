@@ -48,6 +48,7 @@ gf_validate_package() {
 
   declare -g -a GF_TASK_ORDER=() GF_TASK_RELS=()
   declare -g -A GF_TASK_FILES=() GF_TASK_DEPS=() GF_TASK_MAX_ATTEMPTS=()
+  declare -g GF_EXECUTABLE=false
   mapfile -t GF_TASK_RELS < <(jq -r '.tasks[]' "$GF_MANIFEST")
   if [[ $(printf '%s\n' "${GF_TASK_RELS[@]}" | sort | uniq -d | wc -l) -ne 0 ]]; then
     gf_error 'VALIDATION FAIL: duplicate task path'
@@ -67,7 +68,15 @@ gf_validate_package() {
       (.acceptance | type == "array" and length > 0 and all(.[]; type == "string" and length > 0)) and
       (.retry_policy | type == "object") and
       (.retry_policy.max_attempts | type == "number" and . >= 1 and floor == .) and
-      (.on_failure == "retry" or .on_failure == "escalate")
+      (.on_failure == "retry" or .on_failure == "escalate") and
+      ((has("validation") | not) or (
+        (.validation | type == "object") and
+        (.validation.type == "repo_script") and
+        (.validation.path | type == "string" and length > 0) and
+        (.validation.args | type == "array" and all(.[]; type == "string")) and
+        (.validation.timeout_seconds | type == "number" and . >= 1 and . <= 3600 and floor == .) and
+        (.validation.success_markers | type == "array" and length > 0 and all(.[]; type == "string" and length > 0))
+      ))
     ' "$task_file" >/dev/null || { gf_error "VALIDATION FAIL: task contract does not match schema: $task_rel"; return 1; }
     task_id=$(jq -r '.id' "$task_file")
     [[ -z ${seen[$task_id]+x} ]] || { gf_error "VALIDATION FAIL: duplicate task ID $task_id"; return 1; }
@@ -77,6 +86,7 @@ gf_validate_package() {
     GF_TASK_FILES[$task_id]=$task_file
     GF_TASK_DEPS[$task_id]=$(jq -r '.depends_on | join(" ")' "$task_file")
     GF_TASK_MAX_ATTEMPTS[$task_id]=$(jq -r '.retry_policy.max_attempts' "$task_file")
+    if jq -e 'has("validation")' "$task_file" >/dev/null; then GF_EXECUTABLE=true; fi
   done
 
   for task_id in "${GF_TASK_ORDER[@]}"; do
@@ -101,6 +111,36 @@ gf_validate_package() {
     done
     $progress || { gf_error 'VALIDATION FAIL: dependency cycle detected'; return 1; }
   done
+}
+
+gf_transition_task() {
+  local milestone_id=$1 task_id=$2 requested=${3,,} reason=${4:-operator_transition}
+  local state_dir state_file current attempts actual legal=false
+  state_dir=$(gf_state_dir "$milestone_id")
+  state_file="$state_dir/state.json"
+  [[ -n ${GF_TASK_FILES[$task_id]:-} ]] || { gf_error "TRANSITION REJECTED: unknown task $task_id"; return 1; }
+  current=$(jq -r --arg task "$task_id" '.tasks[$task].status' "$state_file")
+  attempts=$(jq -r --arg task "$task_id" '.tasks[$task].attempts' "$state_file")
+  actual=$requested
+  case "$current:$requested" in
+    ready:running|running:pass|running:fail|fail:ready|fail:escalated) legal=true ;;
+  esac
+  $legal || { gf_error "TRANSITION REJECTED: $task_id ${current^^} -> ${requested^^}"; return 1; }
+  if [[ $current == fail && $requested == ready && $attempts -ge ${GF_TASK_MAX_ATTEMPTS[$task_id]} ]]; then
+    gf_error "TRANSITION REJECTED: retry exhausted for $task_id"
+    return 1
+  fi
+  if [[ $current == running && $requested == fail ]]; then
+    attempts=$((attempts + 1))
+    if ((attempts >= GF_TASK_MAX_ATTEMPTS[$task_id])); then actual=escalated; fi
+  fi
+  gf_atomic_state_update "$state_file" '.tasks[$task].status=$status | .tasks[$task].attempts=$attempts' \
+    --arg task "$task_id" --arg status "$actual" --argjson attempts "$attempts" || return 1
+  gf_append_history "$state_dir" "$task_id" "$current" "$actual" "$reason" "$attempts"
+  gf_recalculate "$milestone_id" || return 1
+  GF_TRANSITION_FROM=$current
+  GF_TRANSITION_TO=$actual
+  GF_TRANSITION_ATTEMPTS=$attempts
 }
 
 gf_package_files_json() {

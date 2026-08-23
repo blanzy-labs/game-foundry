@@ -3,9 +3,13 @@ set -u -o pipefail
 
 repo_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 GF_SCHEMA_ROOT="$repo_root/schemas"
+GF_CONTROL_ROOT="$repo_root"
 source "$repo_root/scripts/lib/milestone-common.sh"
+source "$repo_root/scripts/lib/gf-004-execution.sh"
 GF_STATE_ROOT=$(realpath -m "${GF_MILESTONE_STATE_ROOT:-$repo_root/state}")
 GF_ARTIFACT_ROOT=$(realpath -m "${GF_MILESTONE_ARTIFACT_ROOT:-$repo_root/artifacts/milestones}")
+GF_EXECUTION_ARTIFACT_ROOT=$(realpath -m "${GF_EXECUTION_ARTIFACT_ROOT:-$repo_root/artifacts/executions}")
+GF_EXECUTION_TMP_ROOT=$(realpath -m "${GF_EXECUTION_TMP_ROOT:-$repo_root/tmp/executions}")
 json_output=false
 declare -a positional=()
 for argument in "$@"; do
@@ -14,7 +18,7 @@ done
 set -- "${positional[@]}"
 
 usage() {
-  printf 'usage: %s [--json] {validate|init|status|next|transition|render-prompt|dry-run} ...\n' "$0" >&2
+  printf 'usage: %s [--json] {validate|init|status|next|transition|render-prompt|dry-run|execute-one} ...\n' "$0" >&2
   exit 2
 }
 
@@ -39,7 +43,7 @@ render_prompt() {
   task_file=${GF_TASK_FILES[$task_id]:-}
   [[ -n $task_file ]] || { printf 'TASK NOT FOUND: %s\n' "$task_id" >&2; return 1; }
   status=$(jq -r --arg task "$task_id" '.tasks[$task].status' "$state_file")
-  [[ $status == ready ]] || { printf 'PROMPT REJECTED: task %s is %s, not READY\n' "$task_id" "${status^^}" >&2; return 1; }
+  [[ $status == ready || ( ${GF_RENDER_ALLOW_RUNNING:-false} == true && $status == running ) ]] || { printf 'PROMPT REJECTED: task %s is %s, not READY\n' "$task_id" "${status^^}" >&2; return 1; }
   attempts=$(jq -r --arg task "$task_id" '.tasks[$task].attempts' "$state_file")
   attempt=$((attempts + 1))
   max_attempts=${GF_TASK_MAX_ATTEMPTS[$task_id]}
@@ -130,6 +134,22 @@ case "$command_name" in
       --arg package_path "$GF_PACKAGE" --argjson task_order "$order_json" --argjson tasks "$tasks_json" \
       '{milestone_id:$milestone_id,title:$title,status:$status,completion_gate:$completion_gate,package_path:$package_path,task_order:$task_order,tasks:$tasks}' \
       >"$state_dir/state.json"
+    if $GF_EXECUTABLE; then
+      source_path=$(jq -r '.repository.path' "$GF_MANIFEST")
+      if [[ $source_path != /* ]]; then source_path="$GF_CONTROL_ROOT/$source_path"; fi
+      source_repo=$(git -C "$source_path" rev-parse --show-toplevel 2>/dev/null) || { printf 'SOURCE INIT FAIL: repository path is not inside Git\n' >&2; exit 1; }
+      [[ -z $(git -C "$source_repo" status --short) ]] || { printf 'SOURCE INIT FAIL: repository is not clean\n' >&2; exit 1; }
+      source_head=$(git -C "$source_repo" rev-parse HEAD) || exit 1
+      source_branch=$(git -C "$source_repo" branch --show-current)
+      execution_branch="gf/$GF_ID"
+      if git -C "$source_repo" show-ref --verify --quiet "refs/heads/$execution_branch"; then
+        [[ $(git -C "$source_repo" rev-parse "$execution_branch") == "$source_head" ]] || { printf 'SOURCE INIT FAIL: execution branch already exists at another commit\n' >&2; exit 1; }
+      else
+        git -C "$source_repo" branch "$execution_branch" "$source_head" || exit 1
+      fi
+      gf_atomic_state_update "$state_dir/state.json" '.source={repository_path:$repo,git_root:$repo,base_commit:$head,initial_branch:$branch,execution_branch:$execution_branch,head_commit:$head}' \
+        --arg repo "$source_repo" --arg head "$source_head" --arg branch "$source_branch" --arg execution_branch "$execution_branch" || exit 1
+    fi
     : >"$state_dir/history.jsonl"
     for task in "${GF_TASK_ORDER[@]}"; do
       initial=$(jq -r --arg task "$task" '.tasks[$task].status' "$state_dir/state.json")
@@ -181,32 +201,11 @@ case "$command_name" in
     gf_verify_lock "$milestone_id" || exit 1
     gf_recalculate "$milestone_id" || exit 1
     [[ -n ${GF_TASK_FILES[$task_id]:-} ]] || { printf 'TRANSITION REJECTED: unknown task %s\n' "$task_id" >&2; exit 1; }
-    state_dir=$(gf_state_dir "$milestone_id")
-    state_file="$state_dir/state.json"
-    current=$(jq -r --arg task "$task_id" '.tasks[$task].status' "$state_file")
-    attempts=$(jq -r --arg task "$task_id" '.tasks[$task].attempts' "$state_file")
-    actual=$requested
-    legal=false
-    case "$current:$requested" in
-      ready:running|running:pass|running:fail|fail:ready|fail:escalated) legal=true ;;
-    esac
-    $legal || { printf 'TRANSITION REJECTED: %s %s -> %s\n' "$task_id" "${current^^}" "${requested^^}" >&2; exit 1; }
-    if [[ $current == fail && $requested == ready && $attempts -ge ${GF_TASK_MAX_ATTEMPTS[$task_id]} ]]; then
-      printf 'TRANSITION REJECTED: retry exhausted for %s\n' "$task_id" >&2
-      exit 1
-    fi
-    if [[ $current == running && $requested == fail ]]; then
-      attempts=$((attempts + 1))
-      if ((attempts >= GF_TASK_MAX_ATTEMPTS[$task_id])); then actual=escalated; fi
-    fi
-    gf_atomic_state_update "$state_file" '.tasks[$task].status=$status | .tasks[$task].attempts=$attempts' \
-      --arg task "$task_id" --arg status "$actual" --argjson attempts "$attempts" || exit 1
-    gf_append_history "$state_dir" "$task_id" "$current" "$actual" operator_transition "$attempts"
-    gf_recalculate "$milestone_id" || exit 1
+    gf_transition_task "$milestone_id" "$task_id" "$requested" operator_transition || exit 1
     if $json_output; then
-      jq -n --arg milestone_id "$milestone_id" --arg task "$task_id" --arg from "$current" --arg to "$actual" --argjson attempts "$attempts" '{accepted:true,milestone_id:$milestone_id,task:$task,from:$from,to:$to,attempts:$attempts}'
+      jq -n --arg milestone_id "$milestone_id" --arg task "$task_id" --arg from "$GF_TRANSITION_FROM" --arg to "$GF_TRANSITION_TO" --argjson attempts "$GF_TRANSITION_ATTEMPTS" '{accepted:true,milestone_id:$milestone_id,task:$task,from:$from,to:$to,attempts:$attempts}'
     else
-      printf 'TRANSITION ACCEPTED: %s %s -> %s\n' "$task_id" "${current^^}" "${actual^^}"
+      printf 'TRANSITION ACCEPTED: %s %s -> %s\n' "$task_id" "${GF_TRANSITION_FROM^^}" "${GF_TRANSITION_TO^^}"
     fi
     ;;
 
@@ -247,6 +246,10 @@ case "$command_name" in
       printf 'Next task ........... %s\nDependencies ........ PASS\nAttempt ............. %d / %d\n\n' "$task_id" "$((attempts + 1))" "$max_attempts"
       printf 'Prompt:\n%s\n\nExecution:\nNOT STARTED — DRY RUN\n' "$prompt_path"
     fi
+    ;;
+  execute-one)
+    (($# == 1)) || usage
+    gf_execute_one "$1"
     ;;
   *) usage ;;
 esac

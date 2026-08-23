@@ -1,0 +1,17 @@
+{
+  "id": "GF-EXEC-002",
+  "title": "Create second execution fixture marker",
+  "objective": "Create fixtures/execution-project/src/marker-002.txt containing exactly GAME_FOUNDRY_EXECUTION_MARKER_002 followed by a newline.",
+  "depends_on": ["GF-EXEC-001"],
+  "allowed_scope": ["fixtures/execution-project/src/**"],
+  "acceptance": ["marker-002.txt exists", "marker-002.txt contains the exact required marker"],
+  "validation": {
+    "type": "repo_script",
+    "path": "fixtures/execution-project/acceptance/validate-task.sh",
+    "args": ["GF-EXEC-002"],
+    "timeout_seconds": 60,
+    "success_markers": ["GF_EXEC_002_ACCEPTED"]
+  },
+  "retry_policy": {"max_attempts": 2},
+  "on_failure": "retry"
+}

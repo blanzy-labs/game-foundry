@@ -1,0 +1,10 @@
+{
+  "id": "GF-EXEC-M001",
+  "title": "Executable Fixture Milestone",
+  "version": 1,
+  "repository": {"name": "game-foundry", "path": "."},
+  "design": "design.md",
+  "guidelines": "guidelines.md",
+  "tasks": ["tasks/GF-EXEC-001.json", "tasks/GF-EXEC-002.json"],
+  "completion_gate": "human_review"
+}
