@@ -40,3 +40,4 @@ The first real game workload is recorded in the [TB-001 evidence summary](report
 The data-driven level factory is recorded in the [TB-002 evidence summary](reports/tb-002/evidence-summary.md).
 
 The deterministic milestone control plane is documented in [GF-003](docs/slices/GF-003-milestone-contract.md).
+Review the source-controlled [GF-003 evidence summary](reports/gf-003/evidence-summary.md).
