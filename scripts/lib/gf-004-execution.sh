@@ -40,17 +40,21 @@ gf004_runtime_is_proven() {
 gf004_real_agent() {
   local workspace=$1 prompt=$2 artifact_dir=$3 run_id=$4
   local model=${GF_EXECUTION_MODEL:-openai/gpt-5.6-sol}
-  local agent_id=${GF_EXECUTION_AGENT_ID:-game-foundry-executor}
+  local agent_id=${GF_EXECUTION_AGENT_ID:-game-foundry}
+  local agent_workspace=${GF_EXECUTION_AGENT_WORKSPACE:-$GF_CONTROL_ROOT/tmp/gf001/agent-workspace}
   local session_key="agent:${agent_id}:${run_id}" agents_config agent_index started_at
   started_at=$(gf_now)
+  mkdir -p "$agent_workspace"
+  ln -sfn "$workspace" "$agent_workspace/workspace" || return 1
+  GF004_AGENT_LINK="$agent_workspace/workspace"
   if ! openclaw agents list --json | jq -e --arg id "$agent_id" '.[] | select(.id == $id)' >/dev/null; then
-    openclaw agents add "$agent_id" --workspace "$workspace" --model "$model" --non-interactive --json \
+    openclaw agents add "$agent_id" --workspace "$agent_workspace" --model "$model" --non-interactive --json \
       >"$artifact_dir/agent-create.json" 2>"$artifact_dir/agent-create.stderr.log" || return 1
   fi
   agents_config=$(openclaw config get agents.list) || return 1
   agent_index=$(jq -r --arg id "$agent_id" 'to_entries[] | select(.value.id == $id) | .key' <<<"$agents_config")
   [[ -n $agent_index ]] || return 1
-  openclaw config set "agents.list[$agent_index].workspace" "$workspace" >/dev/null || return 1
+  openclaw config set "agents.list[$agent_index].workspace" "$agent_workspace" >/dev/null || return 1
   openclaw config set "agents.list[$agent_index].model" "$model" >/dev/null || return 1
   openclaw config set "agents.list[$agent_index].models[\"$model\"].agentRuntime.id" codex >/dev/null || return 1
   openclaw config get "agents.list[$agent_index]" >"$artifact_dir/runtime-policy.json" || return 1
@@ -138,6 +142,7 @@ gf004_fail_execution() {
   if [[ -d $GF004_WORKSPACE ]]; then
     git -C "$GF004_REPO" worktree remove --force "$GF004_WORKSPACE" >>"$GF004_ARTIFACT_DIR/worktree.log" 2>&1 || true
   fi
+  if [[ -n ${GF004_AGENT_LINK:-} ]]; then ln -sfn "$GF_CONTROL_ROOT/tmp/gf001/bootstrap-workspace" "$GF004_AGENT_LINK" 2>/dev/null || true; fi
   GF004_T_CLEANUP=$(gf004_elapsed "$cleanup_start" "$(date +%s%N)")
   gf_transition_task "$GF004_MILESTONE" "$GF004_TASK" fail execution_failure || true
   gf_atomic_state_update "$GF004_STATE_FILE" '.tasks[$task] += {last_run_id:$run,last_result:"fail",last_evidence:$evidence,failure_reason:$reason}' \
@@ -192,6 +197,7 @@ gf_execute_one() {
   GF004_WORKSPACE="$GF_EXECUTION_TMP_ROOT/$milestone_id/$GF004_TASK/$GF004_RUN_ID/workspace"
   mkdir -p "$GF004_ARTIFACT_DIR" "$(dirname "$GF004_WORKSPACE")"
   GF004_OPENCLAW_EXIT=-1 GF004_VALIDATION_EXIT=-1 GF004_ACCEPTED_COMMIT=''
+  GF004_AGENT_LINK=''
   GF004_RUNTIME_STATUS=not_run GF004_RUNTIME_EVIDENCE='' GF004_SCOPE_STATUS=not_run GF004_VALIDATOR_STATUS=not_run
   GF004_VALIDATOR_REL=$(jq -r '.validation.path' "$task_file") GF004_VALIDATOR_PRE='' GF004_VALIDATOR_POST=''
   GF004_CODEX_INVOCATIONS=0 GF004_T_PROMPT=0 GF004_T_AGENT=0 GF004_T_SCOPE=0 GF004_T_VALIDATION=0 GF004_T_COMMIT=0 GF004_T_STATE=0 GF004_T_CLEANUP=0 GF004_T_TOTAL=0
@@ -214,7 +220,7 @@ gf_execute_one() {
   GF004_VALIDATOR_PRE=$(gf_sha256 "$validator_abs")
 
   prompt_start=$(date +%s%N)
-  GF_RENDER_ALLOW_RUNNING=true prompt_generated=$(render_prompt "$milestone_id" "$GF004_TASK") || { gf004_fail_execution 'authoritative prompt rendering failed'; return 1; }
+  GF_RENDER_ALLOW_RUNNING=true GF_PROMPT_WORKTREE=workspace prompt_generated=$(render_prompt "$milestone_id" "$GF004_TASK") || { gf004_fail_execution 'authoritative prompt rendering failed'; return 1; }
   cp "$prompt_generated" "$GF004_ARTIFACT_DIR/prompt.md" || { gf004_fail_execution 'run prompt preservation failed'; return 1; }
   GF004_T_PROMPT=$(gf004_elapsed "$prompt_start" "$(date +%s%N)")
 
@@ -283,6 +289,7 @@ gf_execute_one() {
     GF004_ACCEPTED_COMMIT=''
     gf004_fail_execution 'post-commit cleanup failed and execution branch was rolled back'; return 1;
   }
+  if [[ -n $GF004_AGENT_LINK ]]; then ln -sfn "$GF_CONTROL_ROOT/tmp/gf001/bootstrap-workspace" "$GF004_AGENT_LINK" 2>/dev/null || true; fi
   [[ $(git -C "$GF004_REPO" rev-parse "$GF004_EXECUTION_BRANCH") == "$GF004_ACCEPTED_COMMIT" ]] || {
     git -C "$GF004_REPO" branch -f "$GF004_EXECUTION_BRANCH" "$GF004_PRE_COMMIT" >/dev/null 2>&1 || true
     GF004_ACCEPTED_COMMIT=''

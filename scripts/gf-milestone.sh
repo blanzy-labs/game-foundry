@@ -64,6 +64,9 @@ render_prompt() {
     printf 'Task ID: %s\n\n' "$task_id"
     printf 'Title: %s\n\n' "$(jq -r '.title' "$task_file")"
     printf 'Objective: %s\n\n' "$(jq -r '.objective' "$task_file")"
+    if [[ -n ${GF_PROMPT_WORKTREE:-} ]]; then
+      printf 'Execution worktree: `%s`\n\nChange into that directory before inspecting or modifying repository files.\n\n' "$GF_PROMPT_WORKTREE"
+    fi
     printf '## Dependencies already satisfied\n\n'
     if [[ -z ${GF_TASK_DEPS[$task_id]} ]]; then printf -- '- None\n'; else
       for dependency in ${GF_TASK_DEPS[$task_id]}; do printf -- '- %s: PASS\n' "$dependency"; done
