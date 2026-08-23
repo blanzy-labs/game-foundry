@@ -40,7 +40,13 @@ gf_validate_package() {
       (.review_policy | type == "object") and
       (.review_policy.type == "openai_critic") and
       (.review_policy.required | type == "boolean") and
-      (.review_policy.block_on == ["blocker"])
+      (.review_policy.block_on == ["blocker"]) and
+      ((.review_policy | has("repair") | not) or (
+        (.review_policy.repair | type == "object") and
+        (.review_policy.repair.enabled | type == "boolean") and
+        (.review_policy.repair.max_attempts | type == "number" and . >= 0 and . <= 5 and floor == .) and
+        ((.review_policy.repair.enabled | not) or .review_policy.repair.max_attempts > 0)
+      ))
     ))
   ' "$GF_MANIFEST" >/dev/null || { gf_error 'VALIDATION FAIL: milestone contract does not match schema'; return 1; }
 
@@ -51,6 +57,8 @@ gf_validate_package() {
   GF_COMPLETION_GATE=$(jq -r '.completion_gate' "$GF_MANIFEST")
   GF_REVIEW_TYPE=$(jq -r '.review_policy.type // "disabled"' "$GF_MANIFEST")
   GF_REVIEW_REQUIRED=$(jq -r '.review_policy.required // false' "$GF_MANIFEST")
+  GF_REPAIR_ENABLED=$(jq -r '.review_policy.repair.enabled // false' "$GF_MANIFEST")
+  GF_REPAIR_MAX_ATTEMPTS=$(jq -r '.review_policy.repair.max_attempts // 0' "$GF_MANIFEST")
   GF_DESIGN=$(gf_safe_package_file "$GF_PACKAGE" "$GF_DESIGN_REL") || { gf_error 'VALIDATION FAIL: invalid design path'; return 1; }
   GF_GUIDELINES=$(gf_safe_package_file "$GF_PACKAGE" "$GF_GUIDELINES_REL") || { gf_error 'VALIDATION FAIL: invalid guidelines path'; return 1; }
 
@@ -131,7 +139,7 @@ gf_transition_task() {
   attempts=$(jq -r --arg task "$task_id" '.tasks[$task].attempts' "$state_file")
   actual=$requested
   case "$current:$requested" in
-    ready:running|running:pass|running:fail|fail:ready|fail:escalated) legal=true ;;
+    ready:running|running:pass|running:fail|running:escalated|fail:ready|fail:escalated) legal=true ;;
   esac
   $legal || { gf_error "TRANSITION REJECTED: $task_id ${current^^} -> ${requested^^}"; return 1; }
   if [[ $current == fail && $requested == ready && $attempts -ge ${GF_TASK_MAX_ATTEMPTS[$task_id]} ]]; then

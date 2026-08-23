@@ -1,0 +1,16 @@
+{
+  "id": "GF-REPAIR-M001",
+  "title": "Bounded Critic-Guided Repair Fixture",
+  "version": 1,
+  "repository": {"name": "game-foundry", "path": "."},
+  "design": "design.md",
+  "guidelines": "guidelines.md",
+  "tasks": ["tasks/GF-REPAIR-001.json", "tasks/GF-REPAIR-002.json"],
+  "completion_gate": "human_review",
+  "review_policy": {
+    "type": "openai_critic",
+    "required": true,
+    "block_on": ["blocker"],
+    "repair": {"enabled": true, "max_attempts": 2}
+  }
+}

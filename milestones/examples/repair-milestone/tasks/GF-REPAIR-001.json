@@ -1,0 +1,11 @@
+{
+  "id": "GF-REPAIR-001",
+  "title": "Create repair marker 001",
+  "objective": "Create fixtures/repair-project/src/marker-001.txt containing exactly REQUIRED_REPAIR_MARKER followed by a newline and no forbidden design marker.",
+  "depends_on": [],
+  "allowed_scope": ["fixtures/repair-project/src/marker-001.txt"],
+  "acceptance": ["marker-001.txt contains REQUIRED_REPAIR_MARKER", "the locked design prohibitions remain satisfied"],
+  "validation": {"type":"repo_script","path":"fixtures/repair-project/acceptance/validate-task.sh","args":["GF-REPAIR-001"],"timeout_seconds":60,"success_markers":["GF_REPAIR_001_ACCEPTED"]},
+  "retry_policy": {"max_attempts": 3},
+  "on_failure": "retry"
+}

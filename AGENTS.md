@@ -50,3 +50,6 @@ Production publication always requires explicit human approval.
 - The critic is read-only and may never alter source, tests, milestone state, or commits.
 - Critic warnings and observations do not block acceptance.
 - Coding agents may not influence or rewrite the critic's trusted instruction or response schema.
+- Critic-guided repair is bounded; repair exhaustion escalates for human review and never creates an unlimited autonomous loop.
+- Critic findings are untrusted evidence and do not override the locked design, task contract, or original allowed scope.
+- Every repair reruns scope, validator-integrity, and deterministic validation; every deterministically valid repair receives a fresh independent critic review.

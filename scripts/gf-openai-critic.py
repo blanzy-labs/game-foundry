@@ -6,6 +6,7 @@ from __future__ import annotations
 import json
 import os
 import pathlib
+import hashlib
 import sys
 import time
 import urllib.error
@@ -29,6 +30,11 @@ EVIDENCE_REFS = {
 
 def write_json(path: pathlib.Path, value: object) -> None:
     path.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def finding_id(finding: dict) -> str:
+    canonical = json.dumps(finding, sort_keys=True, separators=(",", ":")).encode()
+    return "GFCRIT-" + hashlib.sha256(canonical).hexdigest()[:10].upper()
 
 
 def validate_review(value: object) -> tuple[bool, str]:
@@ -69,6 +75,9 @@ def synthetic_response(fault: str, model: str) -> dict:
     elif fault == "blocker":
         finding.update(severity="blocker", category="design", summary="Controlled design blocker.")
         review = {"decision": "block", "summary": "Candidate is blocked.", "findings": [finding]}
+    elif fault == "blocker_b":
+        finding.update(severity="blocker", category="integrity", summary="Controlled newly introduced blocker.", evidence_refs=["CHANGED_FILES"])
+        review = {"decision": "block", "summary": "A new candidate blocker remains.", "findings": [finding]}
     elif fault == "decision_inconsistency":
         finding.update(severity="blocker", category="design", summary="Controlled inconsistent blocker.")
         review = {"decision": "pass", "summary": "Intentionally inconsistent.", "findings": [finding]}
@@ -127,8 +136,13 @@ def main() -> int:
         "max_output_tokens": 1600,
     }
     write_json(output_path / "request.json", body)
-    hooks = os.environ.get("GF_GF006_ENABLE_TEST_HOOKS") == "1"
+    hooks = os.environ.get("GF_GF006_ENABLE_TEST_HOOKS") == "1" or os.environ.get("GF_GF007_ENABLE_TEST_HOOKS") == "1"
     fault = os.environ.get("GF_GF006_CRITIC_FAULT", "") if hooks else ""
+    sequence = os.environ.get("GF_GF007_CRITIC_SEQUENCE", "") if hooks else ""
+    if sequence:
+        choices = sequence.split(",")
+        candidate = max(1, int(os.environ.get("GF_GF007_CANDIDATE_INDEX", "1")))
+        fault = choices[min(candidate - 1, len(choices) - 1)].strip()
     if fault in {"api_failure", "timeout"}:
         return fail(output_path, model, started, fault, f"controlled {fault} test hook")
     if hooks and fault:
@@ -176,6 +190,9 @@ def main() -> int:
     recomputed = "block" if counts["blocker"] else "pass"
     if review["decision"] != recomputed:
         return fail(output_path, model, started, "contract_error", "decision is inconsistent with blocker findings", response_id)
+    persisted_review = dict(review)
+    persisted_review["findings"] = [dict(finding, id=finding_id(finding)) for finding in review["findings"]]
+    write_json(output_path / "review.json", persisted_review)
     usage = response.get("usage") or {}
     status = "block" if counts["blocker"] else "pass"
     result = {
