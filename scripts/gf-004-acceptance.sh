@@ -142,6 +142,19 @@ cp "$happy_state/GF-EXEC-M001/state.json" "$artifact_dir/happy-state-final.json"
 cp "$happy_state/GF-EXEC-M001/lock.json" "$artifact_dir/happy-lock.json"
 cp "$happy_state/GF-EXEC-M001/history.jsonl" "$artifact_dir/happy-history.jsonl"
 
+# Required control-plane and affected shared-gate regressions.
+mkdir -p "$artifact_dir/regression"
+if "$repo_root/scripts/gf-003-acceptance.sh" "$artifact_dir/regression/gf003" >"$artifact_dir/regression/gf003.log" 2>&1; then
+  gf003_regression=pass; pass_case 'GF-003 regression'
+else
+  gf003_regression=fail; fail_case 'GF-003 regression'
+fi
+if "$repo_root/scripts/gf-002-shared-gate-tests.sh" >"$artifact_dir/regression/gf002-shared.log" 2>&1; then
+  older_regression=pass; pass_case 'older affected shared gates'
+else
+  older_regression=fail; fail_case 'older affected shared gates'
+fi
+
 negative_json=$(for key in openclaw_failure validation_failure unauthorized_change validator_mutation missing_runtime changed_lock no_ready no_chaining; do jq -cn --arg key "$key" --arg value "${negative[$key]}" '{key:$key,value:$value}'; done | jq -s from_entries)
 completed_at=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
 total_seconds=$(awk -v start="$total_start" -v end="$(date +%s%N)" 'BEGIN {printf "%.6f",(end-start)/1000000000}')
@@ -150,9 +163,9 @@ overall=pass
 happy_result='{}'
 [[ -s $artifact_dir/happy-execute.json ]] && happy_result=$(cat "$artifact_dir/happy-execute.json")
 jq -n --arg slice GF-004 --arg status "$overall" --arg run_id "$run_id" --arg started_at "$started_at" --arg completed_at "$completed_at" \
-  --arg artifact_dir "${artifact_dir#"$repo_root/"}" --argjson failures "$failures" --argjson total_seconds "$total_seconds" \
+  --arg artifact_dir "${artifact_dir#"$repo_root/"}" --arg gf003_regression "$gf003_regression" --arg older_regression "$older_regression" --argjson failures "$failures" --argjson total_seconds "$total_seconds" \
   --argjson happy_path "$happy_result" --argjson negative_tests "$negative_json" \
-  '{slice:$slice,status:$status,run_id:$run_id,started_at:$started_at,completed_at:$completed_at,artifact_dir:$artifact_dir,happy_path:$happy_path,persistence:{status:"pass",main_unchanged:true,execution_branch:"gf/GF-EXEC-M001",accepted_commit:$happy_path.source.accepted_commit,marker:"GAME_FOUNDRY_EXECUTION_MARKER_001",next_task:"GF-EXEC-002"},negative_tests:$negative_tests,regression:{gf003:"pending",older_shared_gates:"pending"},metrics_seconds:{acceptance_total:$total_seconds},false_acceptances:$failures}' \
+  '{slice:$slice,status:$status,run_id:$run_id,started_at:$started_at,completed_at:$completed_at,artifact_dir:$artifact_dir,happy_path:$happy_path,persistence:{status:"pass",main_unchanged:true,execution_branch:"gf/GF-EXEC-M001",accepted_commit:$happy_path.source.accepted_commit,marker:"GAME_FOUNDRY_EXECUTION_MARKER_001",next_task:"GF-EXEC-002"},negative_tests:$negative_tests,regression:{gf003:$gf003_regression,older_shared_gates:$older_regression},metrics_seconds:{acceptance_total:$total_seconds},false_acceptances:$failures}' \
   >"$reports_dir/evidence-summary.json"
 
 {

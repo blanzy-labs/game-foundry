@@ -1,0 +1,89 @@
+{
+  "slice": "GF-004",
+  "status": "pass",
+  "run_id": "gf004-acceptance-20260823T105134Z-58a184",
+  "started_at": "2026-08-23T10:51:35Z",
+  "completed_at": "2026-08-23T10:52:52Z",
+  "artifact_dir": "artifacts/gf-004/gf004-acceptance-20260823T105134Z-58a184",
+  "happy_path": {
+    "milestone_id": "GF-EXEC-M001",
+    "task_id": "GF-EXEC-001",
+    "run_id": "gf004-20260823T105142Z-03cff07c",
+    "attempt": 1,
+    "max_attempts": 2,
+    "result": "pass",
+    "failure_reason": "",
+    "agent": {
+      "orchestrator": "openclaw",
+      "runtime": "codex",
+      "exit_code": 0,
+      "runtime_status": "pass",
+      "runtime_evidence": "OpenClaw result/audit or Gateway evidence recorded Codex runtime ownership"
+    },
+    "source": {
+      "base_commit": "9563e2311ba3ae64c19c1d89ca5b9ea7c22b1f44",
+      "accepted_commit": "1189cd08ccf9afee69caa8f0887bcc6a4babaaf6",
+      "execution_branch": "gf/GF-EXEC-M001",
+      "changed_files": [
+        "fixtures/execution-project/src/marker.txt"
+      ],
+      "scope": "pass"
+    },
+    "validation": {
+      "status": "pass",
+      "path": "fixtures/execution-project/acceptance/validate-task.sh",
+      "pre_sha256": "cfc1c228f86488fb1e7b073a09b65f11ef6496eb07d320bee53909a10fda7162",
+      "post_sha256": "cfc1c228f86488fb1e7b073a09b65f11ef6496eb07d320bee53909a10fda7162",
+      "exit_code": 0,
+      "success_markers": [
+        "GF_EXEC_001_ACCEPTED"
+      ]
+    },
+    "state": {
+      "task": "pass",
+      "next_task": "GF-EXEC-002"
+    },
+    "evidence_path": "artifacts/executions/GF-EXEC-M001/GF-EXEC-001/gf004-20260823T105142Z-03cff07c",
+    "codex_invocations": 1,
+    "human_interventions": 0,
+    "timing_seconds": {
+      "task_selection": 0.009526,
+      "prompt_render": 0.042519,
+      "openclaw_codex": 69.802007,
+      "scope_validation": 0.028298,
+      "deterministic_validation": 0.116870,
+      "commit": 0.030492,
+      "state_update": 0.075730,
+      "cleanup": 0.019076,
+      "total": 70.498588
+    }
+  },
+  "persistence": {
+    "status": "pass",
+    "main_unchanged": true,
+    "execution_branch": "gf/GF-EXEC-M001",
+    "accepted_commit": "1189cd08ccf9afee69caa8f0887bcc6a4babaaf6",
+    "marker": "GAME_FOUNDRY_EXECUTION_MARKER_001",
+    "next_task": "GF-EXEC-002"
+  },
+  "negative_tests": {
+    "openclaw_failure": "pass",
+    "validation_failure": "pass",
+    "unauthorized_change": "pass",
+    "validator_mutation": "pass",
+    "missing_runtime": "pass",
+    "changed_lock": "pass",
+    "no_ready": "pass",
+    "no_chaining": "pass"
+  },
+  "regression": {
+    "gf003": "pass",
+    "older_shared_gates": "pass",
+    "doctor": "pass",
+    "self_test": "pass"
+  },
+  "metrics_seconds": {
+    "acceptance_total": 77.592050
+  },
+  "false_acceptances": 0
+}
