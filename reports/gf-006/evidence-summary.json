@@ -1,0 +1,342 @@
+{
+  "slice": "GF-006",
+  "status": "pass",
+  "acceptance_id": "gf006-acceptance-20260823T210311Z-749c8f",
+  "started_at": "2026-08-23T21:03:11Z",
+  "completed_at": "2026-08-23T21:17:52Z",
+  "artifact_dir": "artifacts/gf-006/gf006-acceptance-20260823T210311Z-749c8f",
+  "configuration": {
+    "model": "gpt-5.5",
+    "timeout_seconds": 60
+  },
+  "real_clean": {
+    "slice": "GF-005",
+    "run_id": "gf005-20260823T210312Z-1ba9d7a8",
+    "milestone_id": "GF-CRITIC-M001",
+    "started_at": "2026-08-23T21:03:12Z",
+    "completed_at": "2026-08-23T21:06:05Z",
+    "bounds": {
+      "max_tasks": 2,
+      "max_minutes": 30
+    },
+    "attempted_tasks": 2,
+    "passed_tasks": 2,
+    "failed_tasks": 0,
+    "executions": [
+      {
+        "milestone_id": "GF-CRITIC-M001",
+        "task_id": "GF-CRITIC-001",
+        "run_id": "gf004-20260823T210312Z-fd5f6f8f",
+        "attempt": 1,
+        "max_attempts": 2,
+        "result": "pass",
+        "failure_reason": "",
+        "agent": {
+          "orchestrator": "openclaw",
+          "runtime": "codex",
+          "exit_code": 0,
+          "runtime_status": "pass",
+          "runtime_evidence": "OpenClaw result/audit or Gateway evidence recorded Codex runtime ownership"
+        },
+        "source": {
+          "base_commit": "1d5b02b55b9ad6aa5849791f443f51bed1941b54",
+          "accepted_commit": "9cac47c9a5c11aacc2fa41bfbe5a50f74361dd34",
+          "execution_branch": "gf/GF-CRITIC-M001",
+          "changed_files": [
+            "fixtures/critic-project/src/marker-001.txt"
+          ],
+          "scope": "pass"
+        },
+        "validation": {
+          "status": "pass",
+          "path": "fixtures/critic-project/acceptance/validate-task.sh",
+          "pre_sha256": "62516369c8aee4fe24210134535aece0677429376a3743a75ebe227575ec0f5a",
+          "post_sha256": "62516369c8aee4fe24210134535aece0677429376a3743a75ebe227575ec0f5a",
+          "exit_code": 0,
+          "success_markers": [
+            "GF_CRITIC_001_ACCEPTED"
+          ]
+        },
+        "critic": {
+          "required": true,
+          "status": "pass",
+          "model": "gpt-5.5-2026-04-23",
+          "response_id": "resp_0e0909a29ff60763016a8b605d0c7087d2ab20fb5b20ee4cde",
+          "blockers": 0,
+          "warnings": 0,
+          "observations": 3,
+          "error": null,
+          "evidence_path": "artifacts/gf-006/gf006-acceptance-20260823T210311Z-749c8f/cases/real-clean/children/GF-CRITIC-M001/GF-CRITIC-001/gf004-20260823T210312Z-fd5f6f8f/critic",
+          "calls": 1,
+          "duration_seconds": 4.346598,
+          "input_tokens": 1716,
+          "output_tokens": 317
+        },
+        "state": {
+          "task": "pass",
+          "next_task": "GF-CRITIC-002"
+        },
+        "evidence_path": "artifacts/gf-006/gf006-acceptance-20260823T210311Z-749c8f/cases/real-clean/children/GF-CRITIC-M001/GF-CRITIC-001/gf004-20260823T210312Z-fd5f6f8f",
+        "codex_invocations": 1,
+        "human_interventions": 0,
+        "timing_seconds": {
+          "task_selection": 0.009909,
+          "prompt_render": 0.044353,
+          "openclaw_codex": 75.721712,
+          "scope_validation": 0.026754,
+          "deterministic_validation": 0.117087,
+          "critic": 4.506521,
+          "commit": 0.031376,
+          "state_update": 0.076590,
+          "cleanup": 4.426457,
+          "total": 85.359960
+        }
+      },
+      {
+        "milestone_id": "GF-CRITIC-M001",
+        "task_id": "GF-CRITIC-002",
+        "run_id": "gf004-20260823T210438Z-0173ef2c",
+        "attempt": 1,
+        "max_attempts": 2,
+        "result": "pass",
+        "failure_reason": "",
+        "agent": {
+          "orchestrator": "openclaw",
+          "runtime": "codex",
+          "exit_code": 0,
+          "runtime_status": "pass",
+          "runtime_evidence": "OpenClaw result/audit or Gateway evidence recorded Codex runtime ownership"
+        },
+        "source": {
+          "base_commit": "9cac47c9a5c11aacc2fa41bfbe5a50f74361dd34",
+          "accepted_commit": "487015730ad8f5bf606f5aabeeaacb10e0f035af",
+          "execution_branch": "gf/GF-CRITIC-M001",
+          "changed_files": [
+            "fixtures/critic-project/src/marker-002.txt"
+          ],
+          "scope": "pass"
+        },
+        "validation": {
+          "status": "pass",
+          "path": "fixtures/critic-project/acceptance/validate-task.sh",
+          "pre_sha256": "62516369c8aee4fe24210134535aece0677429376a3743a75ebe227575ec0f5a",
+          "post_sha256": "62516369c8aee4fe24210134535aece0677429376a3743a75ebe227575ec0f5a",
+          "exit_code": 0,
+          "success_markers": [
+            "GF_CRITIC_002_ACCEPTED"
+          ]
+        },
+        "critic": {
+          "required": true,
+          "status": "pass",
+          "model": "gpt-5.5-2026-04-23",
+          "response_id": "resp_0b732a1f8eda1b58016a8b60b40ac087d29f6cc9e703eb9545",
+          "blockers": 0,
+          "warnings": 0,
+          "observations": 3,
+          "error": null,
+          "evidence_path": "artifacts/gf-006/gf006-acceptance-20260823T210311Z-749c8f/cases/real-clean/children/GF-CRITIC-M001/GF-CRITIC-002/gf004-20260823T210438Z-0173ef2c/critic",
+          "calls": 1,
+          "duration_seconds": 4.496393,
+          "input_tokens": 1740,
+          "output_tokens": 318
+        },
+        "state": {
+          "task": "pass",
+          "next_task": null
+        },
+        "evidence_path": "artifacts/gf-006/gf006-acceptance-20260823T210311Z-749c8f/cases/real-clean/children/GF-CRITIC-M001/GF-CRITIC-002/gf004-20260823T210438Z-0173ef2c",
+        "codex_invocations": 1,
+        "human_interventions": 0,
+        "timing_seconds": {
+          "task_selection": 0.012618,
+          "prompt_render": 0.040433,
+          "openclaw_codex": 77.038506,
+          "scope_validation": 0.028764,
+          "deterministic_validation": 0.116670,
+          "critic": 4.657341,
+          "commit": 0.030488,
+          "state_update": 0.054576,
+          "cleanup": 4.441891,
+          "total": 86.807593
+        }
+      }
+    ],
+    "stop_reason": "TASK_LIMIT",
+    "queue_after": {
+      "milestone_status": "pending_human",
+      "next_task": null
+    },
+    "codex_invocations": 2,
+    "critic": {
+      "calls": 2,
+      "passes": 2,
+      "blocks": 0,
+      "errors": 0,
+      "duration_seconds": 8.842991000000001,
+      "average_duration_seconds": 4.421496,
+      "input_tokens": 3456,
+      "output_tokens": 635
+    },
+    "human_interventions": 0,
+    "metrics_seconds": {
+      "total_bounded_run": 172.821573,
+      "average_openclaw_codex_per_attempt": 76.380109,
+      "openclaw_codex": 152.760218,
+      "deterministic_validation": 0.233757,
+      "critic": 8.842991000000001,
+      "commit": 0.061864,
+      "state_transition": 0.131166
+    },
+    "fixture_accepted_tasks_per_hour": 41.661465
+  },
+  "real_block": {
+    "slice": "GF-005",
+    "run_id": "gf005-20260823T210605Z-09e52a46",
+    "milestone_id": "GF-CRITIC-M001",
+    "started_at": "2026-08-23T21:06:05Z",
+    "completed_at": "2026-08-23T21:07:26Z",
+    "bounds": {
+      "max_tasks": 2,
+      "max_minutes": 30
+    },
+    "attempted_tasks": 1,
+    "passed_tasks": 0,
+    "failed_tasks": 1,
+    "executions": [
+      {
+        "milestone_id": "GF-CRITIC-M001",
+        "task_id": "GF-CRITIC-001",
+        "run_id": "gf004-20260823T210606Z-416fd86c",
+        "attempt": 1,
+        "max_attempts": 2,
+        "result": "fail",
+        "failure_reason": "CRITIC_BLOCK: independent critic returned a blocker",
+        "agent": {
+          "orchestrator": "openclaw",
+          "runtime": "codex",
+          "exit_code": 0,
+          "runtime_status": "pass",
+          "runtime_evidence": "OpenClaw result/audit or Gateway evidence recorded Codex runtime ownership"
+        },
+        "source": {
+          "base_commit": "1d5b02b55b9ad6aa5849791f443f51bed1941b54",
+          "accepted_commit": null,
+          "execution_branch": "gf/GF-CRITIC-M001",
+          "changed_files": [
+            "fixtures/critic-project/src/marker-001.txt"
+          ],
+          "scope": "pass"
+        },
+        "validation": {
+          "status": "pass",
+          "path": "fixtures/critic-project/acceptance/validate-task.sh",
+          "pre_sha256": "62516369c8aee4fe24210134535aece0677429376a3743a75ebe227575ec0f5a",
+          "post_sha256": "62516369c8aee4fe24210134535aece0677429376a3743a75ebe227575ec0f5a",
+          "exit_code": 0,
+          "success_markers": [
+            "GF_CRITIC_001_ACCEPTED"
+          ]
+        },
+        "critic": {
+          "required": true,
+          "status": "block",
+          "model": "gpt-5.5-2026-04-23",
+          "response_id": "resp_06b93909a7622771016a8b61065fc087d292e83f76cb8ae863",
+          "blockers": 2,
+          "warnings": 0,
+          "observations": 1,
+          "error": null,
+          "evidence_path": "artifacts/gf-006/gf006-acceptance-20260823T210311Z-749c8f/cases/real-block/children/GF-CRITIC-M001/GF-CRITIC-001/gf004-20260823T210606Z-416fd86c/critic",
+          "calls": 1,
+          "duration_seconds": 3.867301,
+          "input_tokens": 1724,
+          "output_tokens": 324
+        },
+        "state": {
+          "task": "fail",
+          "next_task": null
+        },
+        "evidence_path": "artifacts/gf-006/gf006-acceptance-20260823T210311Z-749c8f/cases/real-block/children/GF-CRITIC-M001/GF-CRITIC-001/gf004-20260823T210606Z-416fd86c",
+        "codex_invocations": 1,
+        "human_interventions": 0,
+        "timing_seconds": {
+          "task_selection": 0.009503,
+          "prompt_render": 0.044046,
+          "openclaw_codex": 71.553913,
+          "scope_validation": 0.030532,
+          "deterministic_validation": 0.120277,
+          "critic": 4.027805,
+          "commit": 0,
+          "state_update": 80.393725,
+          "cleanup": 4.479873,
+          "total": 80.721208
+        }
+      }
+    ],
+    "stop_reason": "TASK_FAILED",
+    "queue_after": {
+      "milestone_status": "active",
+      "next_task": null
+    },
+    "codex_invocations": 1,
+    "critic": {
+      "calls": 1,
+      "passes": 0,
+      "blocks": 1,
+      "errors": 0,
+      "duration_seconds": 3.867301,
+      "average_duration_seconds": 3.867301,
+      "input_tokens": 1724,
+      "output_tokens": 324
+    },
+    "human_interventions": 0,
+    "metrics_seconds": {
+      "total_bounded_run": 81.061800,
+      "average_openclaw_codex_per_attempt": 71.553913,
+      "openclaw_codex": 71.553913,
+      "deterministic_validation": 0.120277,
+      "critic": 3.867301,
+      "commit": 0,
+      "state_transition": 80.393725
+    },
+    "fixture_accepted_tasks_per_hour": 0.000000
+  },
+  "checks": {
+    "incomplete": "pass",
+    "warning_only_continuation": "pass",
+    "gf003_regression": "pass",
+    "missing_configuration_fails_closed": "pass",
+    "gf002_shared_regression": "pass",
+    "api_failure": "pass",
+    "decision_inconsistency": "pass",
+    "gf004_regression": "pass",
+    "evidence_size_bound": "pass",
+    "api_preflight": "pass",
+    "invalid_json": "pass",
+    "deterministic_failure_skips_critic": "pass",
+    "bounded_chaining": "pass",
+    "real_clean_pass": "pass",
+    "critic_read_only": "pass",
+    "real_design_block": "pass",
+    "doctor": "pass",
+    "refusal": "pass",
+    "credential_logging_safety": "pass",
+    "bounded_block_stops_descendant": "pass",
+    "gf005_regression": "pass",
+    "prompt_injection_resistance": "pass",
+    "invalid_schema": "pass",
+    "timeout": "pass"
+  },
+  "metrics": {
+    "acceptance_total_seconds": 880.582212,
+    "critic_calls": 3,
+    "critic_passes": 2,
+    "critic_blocks": 1,
+    "critic_errors": 0,
+    "critic_input_tokens": 5180,
+    "critic_output_tokens": 959,
+    "critic_duration_seconds": 12.710292
+  },
+  "false_acceptances": 0
+}
