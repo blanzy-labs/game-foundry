@@ -1,0 +1,521 @@
+{
+  "slice": "GF-007",
+  "status": "pass",
+  "acceptance_id": "gf007-acceptance-20260823T221418Z-42e15a",
+  "started_at": "2026-08-23T22:14:18Z",
+  "completed_at": "2026-08-23T22:33:40Z",
+  "artifact_dir": "artifacts/gf-007/gf007-acceptance-20260823T221418Z-42e15a",
+  "configuration": {
+    "critic_model": "gpt-5.5",
+    "repair_max_attempts": 2
+  },
+  "real_repair": {
+    "milestone_id": "GF-REPAIR-M001",
+    "task_id": "GF-REPAIR-001",
+    "run_id": "gf004-20260823T221418Z-74fff288",
+    "attempt": 1,
+    "max_attempts": 3,
+    "result": "pass",
+    "failure_reason": "",
+    "agent": {
+      "orchestrator": "openclaw",
+      "runtime": "codex",
+      "exit_code": 0,
+      "runtime_status": "pass",
+      "runtime_evidence": "OpenClaw result/audit or Gateway evidence recorded Codex runtime ownership"
+    },
+    "source": {
+      "base_commit": "30b1c949e2046e6a18a0e120f2c9a275b475ffa5",
+      "accepted_commit": "c8620316ebe1916adef9477654f0b10e14ec3212",
+      "execution_branch": "gf/GF-REPAIR-M001",
+      "changed_files": [
+        "fixtures/repair-project/src/marker-001.txt"
+      ],
+      "scope": "pass"
+    },
+    "validation": {
+      "status": "pass",
+      "path": "fixtures/repair-project/acceptance/validate-task.sh",
+      "pre_sha256": "0ee13e6b5170eeaaef2807f7ab42192d6b1bf4b8cb305437ce1e2dabe0dcbfca",
+      "post_sha256": "0ee13e6b5170eeaaef2807f7ab42192d6b1bf4b8cb305437ce1e2dabe0dcbfca",
+      "exit_code": 0,
+      "success_markers": [
+        "GF_REPAIR_001_ACCEPTED"
+      ]
+    },
+    "critic": {
+      "required": true,
+      "status": "pass",
+      "model": "gpt-5.5-2026-04-23",
+      "response_id": "resp_0941512b1df14168016a8b71602b7487d2869ae63e542cec06",
+      "blockers": 0,
+      "warnings": 0,
+      "observations": 3,
+      "error": null,
+      "evidence_path": "artifacts/gf-007/gf007-acceptance-20260823T221418Z-42e15a/cases/real-repair/children/GF-REPAIR-M001/GF-REPAIR-001/gf004-20260823T221418Z-74fff288/repair-01/critic",
+      "calls": 2,
+      "duration_seconds": 10.382821,
+      "input_tokens": 3861,
+      "output_tokens": 808
+    },
+    "critic_history": [
+      {
+        "candidate": 1,
+        "stage": "attempt-01",
+        "result": "block",
+        "response_id": "resp_05c1642883ffc78c016a8b7102e65487d2a7ab661df80a0365",
+        "blockers": 2,
+        "warnings": 0,
+        "observations": 0,
+        "duration_seconds": 4.09124,
+        "input_tokens": 1703,
+        "output_tokens": 295,
+        "evidence_path": "artifacts/gf-007/gf007-acceptance-20260823T221418Z-42e15a/cases/real-repair/children/GF-REPAIR-M001/GF-REPAIR-001/gf004-20260823T221418Z-74fff288/attempt-01/critic"
+      },
+      {
+        "candidate": 2,
+        "stage": "repair-01",
+        "result": "pass",
+        "response_id": "resp_0941512b1df14168016a8b71602b7487d2869ae63e542cec06",
+        "blockers": 0,
+        "warnings": 0,
+        "observations": 3,
+        "duration_seconds": 6.291581,
+        "input_tokens": 2158,
+        "output_tokens": 513,
+        "evidence_path": "artifacts/gf-007/gf007-acceptance-20260823T221418Z-42e15a/cases/real-repair/children/GF-REPAIR-M001/GF-REPAIR-001/gf004-20260823T221418Z-74fff288/repair-01/critic"
+      }
+    ],
+    "agent_history": [
+      {
+        "kind": "initial",
+        "ordinal": 1,
+        "stage": "attempt-01",
+        "duration_seconds": 71.519124,
+        "runtime_status": "pass",
+        "context_strategy": "fresh_self_contained_turn"
+      },
+      {
+        "kind": "repair",
+        "ordinal": 1,
+        "stage": "repair-01",
+        "duration_seconds": 88.745661,
+        "runtime_status": "pass",
+        "context_strategy": "fresh_self_contained_turn"
+      }
+    ],
+    "repair": {
+      "enabled": true,
+      "max_attempts": 2,
+      "attempts_used": 1,
+      "outcome": "repaired",
+      "codex_calls": 1,
+      "critic_calls": 1,
+      "successes": 1,
+      "exhaustions": 0,
+      "duration_seconds": {
+        "codex": 88.745661,
+        "critic": 6.291581,
+        "total": 95.03724199999999
+      },
+      "average_seconds": {
+        "codex": 88.745661,
+        "critic": 6.291581
+      }
+    },
+    "state": {
+      "task": "pass",
+      "next_task": "GF-REPAIR-002"
+    },
+    "evidence_path": "artifacts/gf-007/gf007-acceptance-20260823T221418Z-42e15a/cases/real-repair/children/GF-REPAIR-M001/GF-REPAIR-001/gf004-20260823T221418Z-74fff288",
+    "codex_invocations": 2,
+    "human_interventions": 0,
+    "timing_seconds": {
+      "task_selection": 0.011230,
+      "prompt_render": 0.077417,
+      "openclaw_codex": 160.264785,
+      "scope_validation": 0.055330,
+      "deterministic_validation": 0.235829,
+      "critic": 10.745146,
+      "commit": 0.031418,
+      "state_update": 0.078507,
+      "cleanup": 4.483441,
+      "total": 176.483634,
+      "initial_to_final": 176.483634
+    }
+  },
+  "initial_pass": {
+    "milestone_id": "GF-REPAIR-M001",
+    "task_id": "GF-REPAIR-001",
+    "run_id": "gf004-20260823T221715Z-9efbcebf",
+    "attempt": 1,
+    "max_attempts": 3,
+    "result": "pass",
+    "failure_reason": "",
+    "agent": {
+      "orchestrator": "openclaw",
+      "runtime": "codex",
+      "exit_code": 0,
+      "runtime_status": "pass",
+      "runtime_evidence": "OpenClaw result/audit or Gateway evidence recorded Codex runtime ownership"
+    },
+    "source": {
+      "base_commit": "30b1c949e2046e6a18a0e120f2c9a275b475ffa5",
+      "accepted_commit": "c68bb6e8bcf3a2579794a634201c523f5f50a766",
+      "execution_branch": "gf/GF-REPAIR-M001",
+      "changed_files": [
+        "fixtures/repair-project/src/marker-001.txt"
+      ],
+      "scope": "pass"
+    },
+    "validation": {
+      "status": "pass",
+      "path": "fixtures/repair-project/acceptance/validate-task.sh",
+      "pre_sha256": "0ee13e6b5170eeaaef2807f7ab42192d6b1bf4b8cb305437ce1e2dabe0dcbfca",
+      "post_sha256": "0ee13e6b5170eeaaef2807f7ab42192d6b1bf4b8cb305437ce1e2dabe0dcbfca",
+      "exit_code": 0,
+      "success_markers": [
+        "GF_REPAIR_001_ACCEPTED"
+      ]
+    },
+    "critic": {
+      "required": true,
+      "status": "pass",
+      "model": "gpt-5.5-2026-04-23",
+      "response_id": "resp_0722f9772ff5d352016a8b71b791ac87d281e12f2391573b58",
+      "blockers": 0,
+      "warnings": 0,
+      "observations": 1,
+      "error": null,
+      "evidence_path": "artifacts/gf-007/gf007-acceptance-20260823T221418Z-42e15a/cases/real-initial-pass/children/GF-REPAIR-M001/GF-REPAIR-001/gf004-20260823T221715Z-9efbcebf/attempt-01/critic",
+      "calls": 1,
+      "duration_seconds": 3.652128,
+      "input_tokens": 1699,
+      "output_tokens": 191
+    },
+    "critic_history": [
+      {
+        "candidate": 1,
+        "stage": "attempt-01",
+        "result": "pass",
+        "response_id": "resp_0722f9772ff5d352016a8b71b791ac87d281e12f2391573b58",
+        "blockers": 0,
+        "warnings": 0,
+        "observations": 1,
+        "duration_seconds": 3.652128,
+        "input_tokens": 1699,
+        "output_tokens": 191,
+        "evidence_path": "artifacts/gf-007/gf007-acceptance-20260823T221418Z-42e15a/cases/real-initial-pass/children/GF-REPAIR-M001/GF-REPAIR-001/gf004-20260823T221715Z-9efbcebf/attempt-01/critic"
+      }
+    ],
+    "agent_history": [
+      {
+        "kind": "initial",
+        "ordinal": 1,
+        "stage": "attempt-01",
+        "duration_seconds": 74.917706,
+        "runtime_status": "pass",
+        "context_strategy": "fresh_self_contained_turn"
+      }
+    ],
+    "repair": {
+      "enabled": true,
+      "max_attempts": 2,
+      "attempts_used": 0,
+      "outcome": "not_needed",
+      "codex_calls": 0,
+      "critic_calls": 0,
+      "successes": 0,
+      "exhaustions": 0,
+      "duration_seconds": {
+        "codex": 0,
+        "critic": 0,
+        "total": 0
+      },
+      "average_seconds": {
+        "codex": 0,
+        "critic": 0
+      }
+    },
+    "state": {
+      "task": "pass",
+      "next_task": "GF-REPAIR-002"
+    },
+    "evidence_path": "artifacts/gf-007/gf007-acceptance-20260823T221418Z-42e15a/cases/real-initial-pass/children/GF-REPAIR-M001/GF-REPAIR-001/gf004-20260823T221715Z-9efbcebf",
+    "codex_invocations": 1,
+    "human_interventions": 0,
+    "timing_seconds": {
+      "task_selection": 0.009961,
+      "prompt_render": 0.043060,
+      "openclaw_codex": 74.917706,
+      "scope_validation": 0.030077,
+      "deterministic_validation": 0.117835,
+      "critic": 3.829052,
+      "commit": 0.031742,
+      "state_update": 0.080880,
+      "cleanup": 4.445377,
+      "total": 83.928337,
+      "initial_to_final": 83.928337
+    }
+  },
+  "exhaustion": {
+    "slice": "GF-005",
+    "run_id": "gf005-20260823T221853Z-f6f3d750",
+    "milestone_id": "GF-REPAIR-M001",
+    "started_at": "2026-08-23T22:18:53Z",
+    "completed_at": "2026-08-23T22:18:55Z",
+    "bounds": {
+      "max_tasks": 2,
+      "max_minutes": 5
+    },
+    "attempted_tasks": 1,
+    "passed_tasks": 0,
+    "failed_tasks": 1,
+    "executions": [
+      {
+        "milestone_id": "GF-REPAIR-M001",
+        "task_id": "GF-REPAIR-001",
+        "run_id": "gf004-20260823T221853Z-789d2c2e",
+        "attempt": 1,
+        "max_attempts": 3,
+        "result": "escalated",
+        "failure_reason": "CRITIC_REPAIR_EXHAUSTED: blocker remains after bounded repairs",
+        "agent": {
+          "orchestrator": "openclaw",
+          "runtime": "codex",
+          "exit_code": 0,
+          "runtime_status": "pass",
+          "runtime_evidence": "OpenClaw result/audit or Gateway evidence recorded Codex runtime ownership"
+        },
+        "source": {
+          "base_commit": "30b1c949e2046e6a18a0e120f2c9a275b475ffa5",
+          "accepted_commit": null,
+          "execution_branch": "gf/GF-REPAIR-M001",
+          "changed_files": [
+            "fixtures/repair-project/src/marker-001.txt"
+          ],
+          "scope": "pass"
+        },
+        "validation": {
+          "status": "pass",
+          "path": "fixtures/repair-project/acceptance/validate-task.sh",
+          "pre_sha256": "0ee13e6b5170eeaaef2807f7ab42192d6b1bf4b8cb305437ce1e2dabe0dcbfca",
+          "post_sha256": "0ee13e6b5170eeaaef2807f7ab42192d6b1bf4b8cb305437ce1e2dabe0dcbfca",
+          "exit_code": 0,
+          "success_markers": [
+            "GF_REPAIR_001_ACCEPTED"
+          ]
+        },
+        "critic": {
+          "required": true,
+          "status": "block",
+          "model": "gpt-5.5",
+          "response_id": "resp_test_blocker",
+          "blockers": 1,
+          "warnings": 0,
+          "observations": 0,
+          "error": null,
+          "evidence_path": "artifacts/gf-007/gf007-acceptance-20260823T221418Z-42e15a/cases/exhaustion/children/GF-REPAIR-M001/GF-REPAIR-001/gf004-20260823T221853Z-789d2c2e/repair-02/critic",
+          "calls": 3,
+          "duration_seconds": 0.001940,
+          "input_tokens": 0,
+          "output_tokens": 0
+        },
+        "critic_history": [
+          {
+            "candidate": 1,
+            "stage": "attempt-01",
+            "result": "block",
+            "response_id": "resp_test_blocker",
+            "blockers": 1,
+            "warnings": 0,
+            "observations": 0,
+            "duration_seconds": 0.0006,
+            "input_tokens": 0,
+            "output_tokens": 0,
+            "evidence_path": "artifacts/gf-007/gf007-acceptance-20260823T221418Z-42e15a/cases/exhaustion/children/GF-REPAIR-M001/GF-REPAIR-001/gf004-20260823T221853Z-789d2c2e/attempt-01/critic"
+          },
+          {
+            "candidate": 2,
+            "stage": "repair-01",
+            "result": "block",
+            "response_id": "resp_test_blocker",
+            "blockers": 1,
+            "warnings": 0,
+            "observations": 0,
+            "duration_seconds": 0.000593,
+            "input_tokens": 0,
+            "output_tokens": 0,
+            "evidence_path": "artifacts/gf-007/gf007-acceptance-20260823T221418Z-42e15a/cases/exhaustion/children/GF-REPAIR-M001/GF-REPAIR-001/gf004-20260823T221853Z-789d2c2e/repair-01/critic"
+          },
+          {
+            "candidate": 3,
+            "stage": "repair-02",
+            "result": "block",
+            "response_id": "resp_test_blocker",
+            "blockers": 1,
+            "warnings": 0,
+            "observations": 0,
+            "duration_seconds": 0.000747,
+            "input_tokens": 0,
+            "output_tokens": 0,
+            "evidence_path": "artifacts/gf-007/gf007-acceptance-20260823T221418Z-42e15a/cases/exhaustion/children/GF-REPAIR-M001/GF-REPAIR-001/gf004-20260823T221853Z-789d2c2e/repair-02/critic"
+          }
+        ],
+        "agent_history": [
+          {
+            "kind": "initial",
+            "ordinal": 1,
+            "stage": "attempt-01",
+            "duration_seconds": 0.007412,
+            "runtime_status": "pass",
+            "context_strategy": "fresh_self_contained_turn"
+          },
+          {
+            "kind": "repair",
+            "ordinal": 1,
+            "stage": "repair-01",
+            "duration_seconds": 0.007951,
+            "runtime_status": "pass",
+            "context_strategy": "fresh_self_contained_turn"
+          },
+          {
+            "kind": "repair",
+            "ordinal": 2,
+            "stage": "repair-02",
+            "duration_seconds": 0.007568,
+            "runtime_status": "pass",
+            "context_strategy": "fresh_self_contained_turn"
+          }
+        ],
+        "repair": {
+          "enabled": true,
+          "max_attempts": 2,
+          "attempts_used": 2,
+          "outcome": "exhausted",
+          "codex_calls": 2,
+          "critic_calls": 2,
+          "successes": 0,
+          "exhaustions": 1,
+          "duration_seconds": {
+            "codex": 0.015519,
+            "critic": 0.001340,
+            "total": 0.016859
+          },
+          "average_seconds": {
+            "codex": 0.007759,
+            "critic": 0.000670
+          }
+        },
+        "state": {
+          "task": "escalated",
+          "next_task": null
+        },
+        "evidence_path": "artifacts/gf-007/gf007-acceptance-20260823T221418Z-42e15a/cases/exhaustion/children/GF-REPAIR-M001/GF-REPAIR-001/gf004-20260823T221853Z-789d2c2e",
+        "codex_invocations": 3,
+        "human_interventions": 0,
+        "timing_seconds": {
+          "task_selection": 0.009867,
+          "prompt_render": 0.112778,
+          "openclaw_codex": 0.022931,
+          "scope_validation": 0.086446,
+          "deterministic_validation": 0.355225,
+          "critic": 0.532735,
+          "commit": 0,
+          "state_update": 0.056469,
+          "cleanup": 0.009423,
+          "total": 1.746161,
+          "initial_to_final": 1.746161
+        }
+      }
+    ],
+    "stop_reason": "ESCALATED",
+    "queue_after": {
+      "milestone_status": "active",
+      "next_task": null
+    },
+    "codex_invocations": 3,
+    "critic": {
+      "calls": 3,
+      "passes": 0,
+      "blocks": 3,
+      "errors": 0,
+      "duration_seconds": 0.001940,
+      "average_duration_seconds": 0.000647,
+      "input_tokens": 0,
+      "output_tokens": 0
+    },
+    "repair": {
+      "attempts": 2,
+      "codex_calls": 2,
+      "critic_calls": 2,
+      "tasks_repaired": 0,
+      "tasks_escalated_after_repair": 1,
+      "duration_seconds": {
+        "codex": 0.015519,
+        "critic": 0.001340
+      }
+    },
+    "human_interventions": 0,
+    "metrics_seconds": {
+      "total_bounded_run": 2.095158,
+      "average_openclaw_codex_per_attempt": 0.022931,
+      "openclaw_codex": 0.022931,
+      "deterministic_validation": 0.355225,
+      "critic": 0.001940,
+      "repair_codex": 0.015519,
+      "repair_critic": 0.001340,
+      "commit": 0,
+      "state_transition": 0.056469
+    },
+    "fixture_accepted_tasks_per_hour": 0.000000
+  },
+  "checks": {
+    "gf003_regression": "pass",
+    "state_timing_instrumentation": "pass",
+    "repair_validator_integrity": "pass",
+    "critic_error_fails_closed": "pass",
+    "new_blocker": "pass",
+    "gf002_shared_regression": "pass",
+    "credential_safety": "pass",
+    "gf004_regression": "pass",
+    "api_preflight": "pass",
+    "initial_deterministic_no_repair": "pass",
+    "repair_scope_enforced": "pass",
+    "warning_preserved": "pass",
+    "critic_rereview_error": "pass",
+    "scope_violation": "pass",
+    "real_repair_success": "pass",
+    "critic_timeout_fails_closed": "pass",
+    "critic_rereview_timeout": "pass",
+    "repair_codex_failure_stops": "pass",
+    "validator_mutation": "pass",
+    "immutable_candidate_evidence": "pass",
+    "warning_after_repair": "pass",
+    "doctor": "pass",
+    "deterministic_regression": "pass",
+    "repair_prompt_integrity": "pass",
+    "repair_deterministic_skips_rereview": "pass",
+    "repair_codex_failure": "pass",
+    "repair_limit_enforced": "pass",
+    "repair_exhaustion": "pass",
+    "initial_pass_no_repair": "pass",
+    "gf005_regression": "pass",
+    "gf006_regression": "pass",
+    "new_blocker_continues_budget": "pass"
+  },
+  "metrics": {
+    "acceptance_total_seconds": 1162.609090,
+    "initial_codex_calls": 1,
+    "repair_codex_calls": 1,
+    "critic_calls": 2,
+    "repair_attempts": 1,
+    "successful_repairs": 1,
+    "repair_exhaustions": 1,
+    "total_repair_seconds": 95.03724199999999,
+    "average_repair_codex_seconds": 88.745661,
+    "average_repair_critic_seconds": 6.291581,
+    "human_interventions": 0
+  },
+  "false_acceptances": 0
+}
