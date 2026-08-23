@@ -54,6 +54,8 @@ gf004_real_agent() {
   agents_config=$(openclaw config get agents.list) || return 1
   agent_index=$(jq -r --arg id "$agent_id" 'to_entries[] | select(.value.id == $id) | .key' <<<"$agents_config")
   [[ -n $agent_index ]] || return 1
+  GF004_AGENT_INDEX=$agent_index
+  GF004_AGENT_ORIGINAL_WORKSPACE=$(jq -r --argjson index "$agent_index" '.[$index].workspace // empty' <<<"$agents_config")
   openclaw config set "agents.list[$agent_index].workspace" "$agent_workspace" >/dev/null || return 1
   openclaw config set "agents.list[$agent_index].model" "$model" >/dev/null || return 1
   openclaw config set "agents.list[$agent_index].models[\"$model\"].agentRuntime.id" codex >/dev/null || return 1
@@ -74,8 +76,24 @@ gf004_real_agent() {
   return 0
 }
 
+gf004_restore_agent_workspace() {
+  if [[ -n ${GF004_AGENT_LINK:-} ]]; then ln -sfn "$GF_CONTROL_ROOT/tmp/gf001/bootstrap-workspace" "$GF004_AGENT_LINK" 2>/dev/null || true; fi
+  if [[ -n ${GF004_AGENT_INDEX:-} && -n ${GF004_AGENT_ORIGINAL_WORKSPACE:-} ]]; then
+    openclaw config set "agents.list[$GF004_AGENT_INDEX].workspace" "$GF004_AGENT_ORIGINAL_WORKSPACE" >/dev/null 2>&1 || true
+  fi
+}
+
 gf004_test_agent() {
   local workspace=$1 artifact_dir=$2 fault=$3
+  local target marker
+  case "$GF004_TASK" in
+    GF-EXEC-001) target=fixtures/execution-project/src/marker.txt; marker=GAME_FOUNDRY_EXECUTION_MARKER_001 ;;
+    GF-EXEC-002) target=fixtures/execution-project/src/marker-002.txt; marker=GAME_FOUNDRY_EXECUTION_MARKER_002 ;;
+    GF-CHAIN-001) target=fixtures/chained-execution-project/src/marker-001.txt; marker=GAME_FOUNDRY_CHAIN_MARKER_001 ;;
+    GF-CHAIN-002) target=fixtures/chained-execution-project/src/marker-002.txt; marker=GAME_FOUNDRY_CHAIN_MARKER_002 ;;
+    GF-CHAIN-003) target=fixtures/chained-execution-project/src/marker-003.txt; marker=GAME_FOUNDRY_CHAIN_MARKER_003 ;;
+    *) return 1 ;;
+  esac
   GF004_OPENCLAW_EXIT=0
   printf '{"test_hook":true,"status":"ok","agentHarnessId":"codex"}\n' >"$artifact_dir/openclaw.stdout.log"
   cp "$artifact_dir/openclaw.stdout.log" "$artifact_dir/openclaw-result.json"
@@ -89,14 +107,14 @@ gf004_test_agent() {
       return 1
       ;;
     validation_failure)
-      printf 'WRONG_MARKER\n' >"$workspace/fixtures/execution-project/src/marker.txt"
+      printf 'WRONG_MARKER\n' >"$workspace/$target"
       ;;
     unauthorized_change)
-      printf 'GAME_FOUNDRY_EXECUTION_MARKER_001\n' >"$workspace/fixtures/execution-project/src/marker.txt"
+      printf '%s\n' "$marker" >"$workspace/$target"
       printf '\nGF-004 unauthorized-change test hook\n' >>"$workspace/README.md"
       ;;
     *)
-      printf 'GAME_FOUNDRY_EXECUTION_MARKER_001\n' >"$workspace/fixtures/execution-project/src/marker.txt"
+      printf '%s\n' "$marker" >"$workspace/$target"
       ;;
   esac
   return 0
@@ -142,7 +160,7 @@ gf004_fail_execution() {
   if [[ -d $GF004_WORKSPACE ]]; then
     git -C "$GF004_REPO" worktree remove --force "$GF004_WORKSPACE" >>"$GF004_ARTIFACT_DIR/worktree.log" 2>&1 || true
   fi
-  if [[ -n ${GF004_AGENT_LINK:-} ]]; then ln -sfn "$GF_CONTROL_ROOT/tmp/gf001/bootstrap-workspace" "$GF004_AGENT_LINK" 2>/dev/null || true; fi
+  gf004_restore_agent_workspace
   GF004_T_CLEANUP=$(gf004_elapsed "$cleanup_start" "$(date +%s%N)")
   gf_transition_task "$GF004_MILESTONE" "$GF004_TASK" fail execution_failure || true
   gf_atomic_state_update "$GF004_STATE_FILE" '.tasks[$task] += {last_run_id:$run,last_result:"fail",last_evidence:$evidence,failure_reason:$reason}' \
@@ -197,7 +215,7 @@ gf_execute_one() {
   GF004_WORKSPACE="$GF_EXECUTION_TMP_ROOT/$milestone_id/$GF004_TASK/$GF004_RUN_ID/workspace"
   mkdir -p "$GF004_ARTIFACT_DIR" "$(dirname "$GF004_WORKSPACE")"
   GF004_OPENCLAW_EXIT=-1 GF004_VALIDATION_EXIT=-1 GF004_ACCEPTED_COMMIT=''
-  GF004_AGENT_LINK=''
+  GF004_AGENT_LINK='' GF004_AGENT_INDEX='' GF004_AGENT_ORIGINAL_WORKSPACE=''
   GF004_RUNTIME_STATUS=not_run GF004_RUNTIME_EVIDENCE='' GF004_SCOPE_STATUS=not_run GF004_VALIDATOR_STATUS=not_run
   GF004_VALIDATOR_REL=$(jq -r '.validation.path' "$task_file") GF004_VALIDATOR_PRE='' GF004_VALIDATOR_POST=''
   GF004_CODEX_INVOCATIONS=0 GF004_T_PROMPT=0 GF004_T_AGENT=0 GF004_T_SCOPE=0 GF004_T_VALIDATION=0 GF004_T_COMMIT=0 GF004_T_STATE=0 GF004_T_CLEANUP=0 GF004_T_TOTAL=0
@@ -289,7 +307,7 @@ gf_execute_one() {
     GF004_ACCEPTED_COMMIT=''
     gf004_fail_execution 'post-commit cleanup failed and execution branch was rolled back'; return 1;
   }
-  if [[ -n $GF004_AGENT_LINK ]]; then ln -sfn "$GF_CONTROL_ROOT/tmp/gf001/bootstrap-workspace" "$GF004_AGENT_LINK" 2>/dev/null || true; fi
+  gf004_restore_agent_workspace
   [[ $(git -C "$GF004_REPO" rev-parse "$GF004_EXECUTION_BRANCH") == "$GF004_ACCEPTED_COMMIT" ]] || {
     git -C "$GF004_REPO" branch -f "$GF004_EXECUTION_BRANCH" "$GF004_PRE_COMMIT" >/dev/null 2>&1 || true
     GF004_ACCEPTED_COMMIT=''

@@ -41,3 +41,7 @@ Production publication always requires explicit human approval.
 - Coding agents cannot modify trusted deterministic validators unless validator development is itself the task and an independent higher-level acceptance authority exists.
 - Task PASS requires deterministic acceptance followed by a Game Foundry state transition.
 - A READY task becoming available does not imply it should be executed in the same invocation.
+- Chained execution may proceed only after deterministic PASS; a failed task terminates the bounded run.
+- Newly READY work never overrides configured task or time bounds.
+- Coding agents cannot request or cause the next task to execute.
+- Milestone human gates always terminate automated execution.

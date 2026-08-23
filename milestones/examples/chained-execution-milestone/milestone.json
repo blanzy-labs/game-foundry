@@ -1,0 +1,10 @@
+{
+  "id": "GF-CHAIN-M001",
+  "title": "Chained Execution Fixture Milestone",
+  "version": 1,
+  "repository": {"name": "game-foundry", "path": "."},
+  "design": "design.md",
+  "guidelines": "guidelines.md",
+  "tasks": ["tasks/GF-CHAIN-001.json", "tasks/GF-CHAIN-002.json", "tasks/GF-CHAIN-003.json"],
+  "completion_gate": "human_review"
+}

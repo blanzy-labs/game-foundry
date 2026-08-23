@@ -1,0 +1,11 @@
+{
+  "id": "GF-CHAIN-001",
+  "title": "Create chain marker 001",
+  "objective": "Create fixtures/chained-execution-project/src/marker-001.txt containing exactly GAME_FOUNDRY_CHAIN_MARKER_001 followed by a newline.",
+  "depends_on": [],
+  "allowed_scope": ["fixtures/chained-execution-project/src/marker-001.txt"],
+  "acceptance": ["marker-001.txt exists", "the marker content is exact"],
+  "validation": {"type":"repo_script","path":"fixtures/chained-execution-project/acceptance/validate-task.sh","args":["GF-CHAIN-001"],"timeout_seconds":60,"success_markers":["GF_CHAIN_001_ACCEPTED"]},
+  "retry_policy": {"max_attempts": 2},
+  "on_failure": "retry"
+}

@@ -6,10 +6,12 @@ GF_SCHEMA_ROOT="$repo_root/schemas"
 GF_CONTROL_ROOT="$repo_root"
 source "$repo_root/scripts/lib/milestone-common.sh"
 source "$repo_root/scripts/lib/gf-004-execution.sh"
+source "$repo_root/scripts/lib/gf-005-runner.sh"
 GF_STATE_ROOT=$(realpath -m "${GF_MILESTONE_STATE_ROOT:-$repo_root/state}")
 GF_ARTIFACT_ROOT=$(realpath -m "${GF_MILESTONE_ARTIFACT_ROOT:-$repo_root/artifacts/milestones}")
 GF_EXECUTION_ARTIFACT_ROOT=$(realpath -m "${GF_EXECUTION_ARTIFACT_ROOT:-$repo_root/artifacts/executions}")
 GF_EXECUTION_TMP_ROOT=$(realpath -m "${GF_EXECUTION_TMP_ROOT:-$repo_root/tmp/executions}")
+GF_BOUNDED_ARTIFACT_ROOT=$(realpath -m "${GF_BOUNDED_ARTIFACT_ROOT:-$repo_root/artifacts/bounded-runs}")
 json_output=false
 declare -a positional=()
 for argument in "$@"; do
@@ -18,7 +20,7 @@ done
 set -- "${positional[@]}"
 
 usage() {
-  printf 'usage: %s [--json] {validate|init|status|next|transition|render-prompt|dry-run|execute-one} ...\n' "$0" >&2
+  printf 'usage: %s [--json] {validate|init|status|next|transition|render-prompt|dry-run|execute-one|run-bounded} ...\n' "$0" >&2
   exit 2
 }
 
@@ -253,6 +255,9 @@ case "$command_name" in
   execute-one)
     (($# == 1)) || usage
     gf_execute_one "$1"
+    ;;
+  run-bounded)
+    gf_run_bounded "$@"
     ;;
   *) usage ;;
 esac
