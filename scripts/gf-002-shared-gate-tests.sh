@@ -32,7 +32,7 @@ if [[ -f $historical_png ]]; then
 else
   timeout 60 xvfb-run -a -s '-screen 0 640x360x24' "${GODOT_BIN:-godot}" --display-driver x11 \
     --path "$repo_root/fixtures/godot-smoke" --resolution 640x360 -- --screenshot="$temp_root/valid.png" \
-    >"$temp_root/godot-screenshot.log" 2>&1 || true
+    </dev/null >"$temp_root/godot-screenshot.log" 2>&1 || true
 fi
 expect_pass 'valid PNG' gf001_validate_png "$temp_root/valid.png" 640 360
 expect_fail 'missing PNG' gf001_validate_png "$temp_root/missing.png" 640 360
