@@ -1,0 +1,17 @@
+{
+  "id": "GF-FIX-M001",
+  "title": "Fixture Milestone",
+  "version": 1,
+  "repository": {
+    "name": "fixture-project",
+    "path": "fixtures/milestone-project"
+  },
+  "design": "design.md",
+  "guidelines": "guidelines.md",
+  "tasks": [
+    "tasks/GF-FIX-001.json",
+    "tasks/GF-FIX-002.json",
+    "tasks/GF-FIX-003.json"
+  ],
+  "completion_gate": "human_review"
+}

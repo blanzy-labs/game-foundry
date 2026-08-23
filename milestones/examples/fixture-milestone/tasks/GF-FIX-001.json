@@ -1,0 +1,11 @@
+{
+  "id": "GF-FIX-001",
+  "title": "Create fixture marker",
+  "objective": "Define the first deterministic fixture marker.",
+  "depends_on": [],
+  "allowed_scope": ["fixtures/milestone-project/src/**", "fixtures/milestone-project/tests/**"],
+  "acceptance": ["fixture validation passes", "first marker exists"],
+  "expected_artifacts": ["validation.log"],
+  "retry_policy": {"max_attempts": 2},
+  "on_failure": "escalate"
+}

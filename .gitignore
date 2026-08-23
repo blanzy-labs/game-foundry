@@ -6,6 +6,8 @@ tmp/
 .vscode/
 artifacts/**
 !artifacts/.gitkeep
+state/*/
+!state/.gitkeep
 reports/gf-001/latest.json
 reports/gf-001/latest.txt
 *.log

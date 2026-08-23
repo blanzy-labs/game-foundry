@@ -1,0 +1,11 @@
+{
+  "id": "GF-FIX-002",
+  "title": "Add second fixture marker",
+  "objective": "Define the second marker after the first marker contract passes.",
+  "depends_on": ["GF-FIX-001"],
+  "allowed_scope": ["fixtures/milestone-project/src/**", "fixtures/milestone-project/tests/**"],
+  "acceptance": ["fixture validation passes", "second marker exists"],
+  "expected_artifacts": ["validation.log"],
+  "retry_policy": {"max_attempts": 3},
+  "on_failure": "escalate"
+}

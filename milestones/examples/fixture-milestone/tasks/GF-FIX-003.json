@@ -1,0 +1,11 @@
+{
+  "id": "GF-FIX-003",
+  "title": "Produce final fixture validation",
+  "objective": "Describe final deterministic validation for both fixture markers.",
+  "depends_on": ["GF-FIX-002"],
+  "allowed_scope": ["fixtures/milestone-project/tests/**"],
+  "acceptance": ["all fixture validation passes", "final marker exists"],
+  "expected_artifacts": ["validation.log"],
+  "retry_policy": {"max_attempts": 2},
+  "on_failure": "escalate"
+}

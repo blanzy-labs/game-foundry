@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://game-foundry.invalid/schemas/milestone.schema.json",
+  "title": "Game Foundry milestone",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "title", "version", "repository", "design", "guidelines", "tasks", "completion_gate"],
+  "properties": {
+    "id": {"type": "string", "pattern": "^[A-Z0-9][A-Z0-9-]+$"},
+    "title": {"type": "string", "minLength": 1},
+    "version": {"type": "integer", "minimum": 1},
+    "repository": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "path"],
+      "properties": {
+        "name": {"type": "string", "minLength": 1},
+        "path": {"type": "string", "minLength": 1}
+      }
+    },
+    "design": {"type": "string", "minLength": 1},
+    "guidelines": {"type": "string", "minLength": 1},
+    "tasks": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+    "completion_gate": {"enum": ["human_review", "automated"]}
+  }
+}
