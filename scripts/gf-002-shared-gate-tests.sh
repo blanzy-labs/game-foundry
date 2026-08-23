@@ -26,7 +26,14 @@ printf 'GAME_FOUNDRY_RUNTIME_OK\nGAME_FOUNDRY_TOKEN=GF002_TEST\n' >"$temp_root/m
 expect_pass 'valid marker set' gf001_gate_runtime "$temp_root/markers.log" 0 GF002_TEST
 expect_fail 'missing marker' gf001_gate_runtime "$temp_root/markers.log" 0 GF002_MISSING
 
-cp "$repo_root/artifacts/gf-001/gf001-20260822T201203Z-45de91/screenshot.png" "$temp_root/valid.png"
+historical_png="$repo_root/artifacts/gf-001/gf001-20260822T201203Z-45de91/screenshot.png"
+if [[ -f $historical_png ]]; then
+  cp "$historical_png" "$temp_root/valid.png"
+else
+  timeout 60 xvfb-run -a -s '-screen 0 640x360x24' "${GODOT_BIN:-godot}" --display-driver x11 \
+    --path "$repo_root/fixtures/godot-smoke" --resolution 640x360 -- --screenshot="$temp_root/valid.png" \
+    >"$temp_root/godot-screenshot.log" 2>&1 || true
+fi
 expect_pass 'valid PNG' gf001_validate_png "$temp_root/valid.png" 640 360
 expect_fail 'missing PNG' gf001_validate_png "$temp_root/missing.png" 640 360
 
