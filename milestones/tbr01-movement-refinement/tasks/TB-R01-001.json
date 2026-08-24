@@ -1,0 +1,26 @@
+{
+  "id": "TB-R01-001",
+  "title": "Refine Camera-Forward Player Facing",
+  "objective": "Refine scripts/player.gd so movement remains camera-relative while the visible character smoothly faces camera-forward whenever moving, including strafing and backpedaling, without changing idle camera freedom or existing gameplay.",
+  "depends_on": [],
+  "allowed_scope": ["scripts/player.gd"],
+  "acceptance": [
+    "W moves camera-forward and follows camera-yaw changes while held",
+    "A and D remain camera-relative strafes while target character facing remains camera-forward",
+    "S remains camera-relative backward movement while target character facing remains camera-forward",
+    "diagonal input is normalized to the configured movement speed",
+    "moving rotation approaches camera yaw smoothly without snapping, while idle camera movement does not force body rotation",
+    "mouse yaw, mouse pitch, pitch limits, capture behavior, gravity, collision, interaction, objective, exit, completion, and restart behavior remain intact",
+    "restroom_001, restroom_002, and restroom_003 regressions and the Linux exported runtime all pass",
+    "the only changed source file is scripts/player.gd and no new movement mechanic, animation system, or character replacement is introduced"
+  ],
+  "validation": {
+    "type": "repo_script",
+    "path": "tests/run_tbr01_acceptance.sh",
+    "args": ["/tmp/tbr01-game-foundry-validation"],
+    "timeout_seconds": 900,
+    "success_markers": ["TBR01_ACCEPTANCE_OK"]
+  },
+  "retry_policy": {"max_attempts": 2},
+  "on_failure": "escalate"
+}
