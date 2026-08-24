@@ -173,7 +173,8 @@ GF_GF004_ENABLE_TEST_HOOKS=1 GF_GF004_FAULT=simulate_success GF_GF007_ENABLE_TES
 child_pid=$!
 for _ in $(seq 1 100); do [[ -f $CASE_STATE/GF-RECOVERY-M001/state.json ]] && jq -e '.active_execution.checkpoint=="CLAIMED"' "$CASE_STATE/GF-RECOVERY-M001/state.json" >/dev/null 2>&1 && break; sleep 0.05; done
 set +e; case_cli recovery-status GF-RECOVERY-M001 --json >"$CASE_ARTIFACT/recovery-status.json"; busy_status=$?; case_cli recover GF-RECOVERY-M001 --json >"$CASE_ARTIFACT/recovery-result.json"; busy_recover=$?; set -e; set +e
-kill -KILL "$child_pid" 2>/dev/null || true; wait "$child_pid" 2>/dev/null || true
+owner_pid=$(jq -r '.active_execution.owner.pid' "$CASE_STATE/GF-RECOVERY-M001/state.json")
+kill -KILL "$owner_pid" 2>/dev/null || true; kill -KILL "$child_pid" 2>/dev/null || true; wait "$child_pid" 2>/dev/null || true
 if [[ $busy_status -eq 0 && $busy_recover -eq 2 ]] && jq -e '.recovery_action=="RECOVERY_BUSY" and .owner=="live"' "$CASE_ARTIFACT/recovery-status.json" >/dev/null && jq -e '.recovery_action=="RECOVERY_BUSY"' "$CASE_ARTIFACT/recovery-result.json" >/dev/null; then pass_case Q_active_owner_rejection; else fail_case Q_active_owner_rejection; fi
 
 # Simulated reboot identity mismatch is stale even if the recorded PID exists.
@@ -190,18 +191,19 @@ if [[ $fresh_rc -eq 0 ]] && jq -e '.attempted_tasks==1 and .executions[0].task_i
 main_after=$(git -C "$repo_root" rev-parse main)
 if [[ $main_before == "$main_after" ]]; then pass_case R_main_branch_isolation; else fail_case R_main_branch_isolation; fi
 
-# Required regressions. GF-007 includes real GF-006 and nested GF-003/004/005 coverage.
-for slice in 003 004 005; do
-  set +e
-  if [[ $slice == 003 ]]; then (cd "$repo_root" && ./scripts/gf-003-acceptance.sh "$artifact_dir/regression/gf003-artifacts") >"$artifact_dir/regression/gf003.log" 2>&1
-  else (cd "$repo_root" && "./scripts/gf-$slice-acceptance.sh") >"$artifact_dir/regression/gf$slice.log" 2>&1; fi
-  regression_code=$?; set -e; set +e
-  if [[ $regression_code -eq 0 ]]; then pass_case "gf${slice}_regression"; else fail_case "gf${slice}_regression"; fi
-done
-set +e; (cd "$repo_root" && ./scripts/gf-006-acceptance.sh) >"$artifact_dir/regression/gf006.log" 2>&1; gf006_code=$?; set -e; set +e
-if [[ $gf006_code -eq 0 || (-f $repo_root/reports/gf-006/evidence-summary.json && $(jq -r '[.checks|to_entries[]|select(.key!="doctor" and .value!="pass")]|length' "$repo_root/reports/gf-006/evidence-summary.json") -eq 0) ]]; then pass_case gf006_regression; else fail_case gf006_regression; fi
+# Required regressions. GF-007 executes GF-006, whose acceptance executes
+# GF-003/GF-004/GF-005. Consume that nested evidence instead of repeating the
+# same real OpenClaw/Codex suites several times in one GF-008 invocation.
 set +e; (cd "$repo_root" && ./scripts/gf-007-acceptance.sh) >"$artifact_dir/regression/gf007.log" 2>&1; gf007_code=$?; set -e; set +e
-if [[ $gf007_code -eq 0 ]]; then pass_case gf007_regression; else fail_case gf007_regression; fi
+if [[ $gf007_code -eq 0 ]]; then
+  pass_case gf007_regression
+  for slice in 003 004 005 006; do
+    key="gf${slice}_regression"
+    if jq -e --arg key "$key" '.checks[$key]=="pass"' "$repo_root/reports/gf-007/evidence-summary.json" >/dev/null; then pass_case "$key"; else fail_case "$key"; fi
+  done
+else
+  fail_case gf007_regression; fail_case gf003_regression; fail_case gf004_regression; fail_case gf005_regression; fail_case gf006_regression
+fi
 if "$repo_root/scripts/gf-002-shared-gate-tests.sh" >"$artifact_dir/regression/gf002.log" 2>&1; then pass_case gf002_shared_regression; else fail_case gf002_shared_regression; fi
 if "$repo_root/scripts/doctor.sh" >"$artifact_dir/regression/doctor.log" 2>&1; then pass_case doctor; else fail_case doctor; fi
 
