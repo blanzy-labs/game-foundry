@@ -1,0 +1,158 @@
+{
+  "slice": "GF-008",
+  "status": "pass",
+  "acceptance_id": "gf008-acceptance-20260824T132908Z-f727e2",
+  "started_at": "2026-08-24T13:29:08Z",
+  "completed_at": "2026-08-24T13:52:58Z",
+  "artifact_dir": "artifacts/gf-008/gf008-acceptance-20260824T132908Z-f727e2",
+  "configuration": {
+    "critic_model": "gpt-5.5",
+    "max_agent_restarts": 2,
+    "repair_max_attempts": 2
+  },
+  "real_recovery": {
+    "milestone_id": "GF-RECOVERY-M001",
+    "task_id": "GF-RECOVERY-001",
+    "run_id": "gf004-20260824T132918Z-725d8e59",
+    "original_checkpoint": "DETERMINISTIC_PASSED",
+    "recovery_action": "RESUME_CRITIC",
+    "result": "pass",
+    "resumed_from": "deterministic_passed",
+    "codex_calls": 0,
+    "critic_calls": 1,
+    "commit": {
+      "created": true,
+      "sha": "e88dd3a27ecd55bacd4dde0d294b01f207428c85"
+    },
+    "state": {
+      "task": "pass",
+      "next_task": "GF-RECOVERY-002"
+    },
+    "counters": {
+      "recovery_invocations": 1,
+      "agent_restarts": 0,
+      "critic_retries": 0,
+      "commit_reconciliations": 0,
+      "worktree_recreations": 1,
+      "repair_resumptions": 0
+    },
+    "work_reused": {
+      "codex_candidate": true,
+      "deterministic_result": true,
+      "critic_result": false
+    },
+    "human_interventions": 0
+  },
+  "commit_reconciliation": {
+    "milestone_id": "GF-RECOVERY-M001",
+    "task_id": "GF-RECOVERY-001",
+    "run_id": "gf004-20260824T133043Z-c159276c",
+    "original_checkpoint": "ACCEPTED_COMMIT_CREATED",
+    "recovery_action": "RECONCILE_COMMIT",
+    "result": "pass",
+    "resumed_from": "accepted_commit_created",
+    "codex_calls": 0,
+    "critic_calls": 0,
+    "commit": {
+      "created": false,
+      "sha": "a8f7a803dd71c3be7940dd4735810da251e7fd30"
+    },
+    "state": {
+      "task": "pass",
+      "next_task": "GF-RECOVERY-002"
+    },
+    "counters": {
+      "recovery_invocations": 1,
+      "agent_restarts": 0,
+      "critic_retries": 0,
+      "commit_reconciliations": 1,
+      "worktree_recreations": 0,
+      "repair_resumptions": 0
+    },
+    "work_reused": {
+      "codex_candidate": true,
+      "deterministic_result": false,
+      "critic_result": true
+    },
+    "human_interventions": 0
+  },
+  "repair_recovery": {
+    "milestone_id": "GF-RECOVERY-M001",
+    "task_id": "GF-RECOVERY-001",
+    "run_id": "gf004-20260824T133047Z-1e379f31",
+    "original_checkpoint": "CRITIC_BLOCKED",
+    "recovery_action": "RESUME_REPAIR",
+    "result": "pass",
+    "resumed_from": "critic_blocked",
+    "codex_calls": 1,
+    "critic_calls": 1,
+    "commit": {
+      "created": true,
+      "sha": "2989cf280f89d11c675e8b54fd023084e0371699"
+    },
+    "state": {
+      "task": "pass",
+      "next_task": "GF-RECOVERY-002"
+    },
+    "counters": {
+      "recovery_invocations": 1,
+      "agent_restarts": 0,
+      "critic_retries": 0,
+      "commit_reconciliations": 0,
+      "worktree_recreations": 1,
+      "repair_resumptions": 1
+    },
+    "work_reused": {
+      "codex_candidate": true,
+      "deterministic_result": true,
+      "critic_result": false
+    },
+    "human_interventions": 0
+  },
+  "checks": {
+    "gf003_regression": "pass",
+    "J_repair_agent_same_ordinal": "pass",
+    "E_critic_started_retry": "pass",
+    "P_unknown_branch_movement": "pass",
+    "gf002_shared_regression": "pass",
+    "D_real_deterministic_pass_resume": "pass",
+    "F_critic_pass_resume": "pass",
+    "G_commit_before_state_reconciliation": "pass",
+    "gf004_regression": "pass",
+    "L_repair_budget_persistence": "pass",
+    "S_no_descendant_execution": "pass",
+    "api_preflight": "pass",
+    "H_duplicate_recovery": "pass",
+    "human_gate_authoritative": "pass",
+    "gf007_regression": "pass",
+    "B_during_agent_restart": "pass",
+    "Q_active_owner_rejection": "pass",
+    "T_fresh_bounded_continuation": "pass",
+    "K_repair_deterministic_resume": "pass",
+    "A_before_agent_recovery": "pass",
+    "doctor": "pass",
+    "M_recovery_restart_exhaustion": "pass",
+    "I_critic_block_repair_resume": "pass",
+    "simulated_boot_change": "pass",
+    "gf005_regression": "pass",
+    "C_candidate_snapshot_resume": "pass",
+    "N_corrupt_checkpoint": "pass",
+    "R_main_branch_isolation": "pass",
+    "gf006_regression": "pass",
+    "O_missing_snapshot": "pass"
+  },
+  "metrics": {
+    "acceptance_total_seconds": 1430.749144,
+    "recovery_invocations": 3,
+    "successful_recoveries": 22,
+    "escalations": 8,
+    "agent_restarts": 0,
+    "worktree_recreations": 2,
+    "candidate_restores": 2,
+    "codex_calls_avoided": 3,
+    "critic_calls_avoided": 1,
+    "average_recovery_seconds": 65.03405199999999,
+    "human_interventions": 0
+  },
+  "false_acceptances": 0
+}
