@@ -1,0 +1,27 @@
+{
+  "id": "TB-R04B-001",
+  "title": "Replace the Shirt with Striped Front-Shell Coloration",
+  "objective": "Delete the separate Shirt/ring construction and make 3–5 bold front-to-rear burglar stripes part of the thorax/front exoskeleton surface while preserving the dark rear abdomen and all accepted character/gameplay behavior.",
+  "depends_on": [],
+  "allowed_scope": ["scenes/player.tscn", "scripts/player.gd"],
+  "acceptance": [
+    "Body/Shirt and all separate shirt base, tubular ring, and floating stripe geometry are completely absent",
+    "the stable Thorax/front shell itself carries either a deterministic Z-driven striped ShaderMaterial or 3–5 joined non-cylinder ShellStripe pieces that replace the underlying thorax surface",
+    "shader stripes use local VERTEX.z, expose contrasting stripe_light and stripe_dark plus stripe_count 3–5, remain static and matte, and cross the shell left-to-right while progressing front-to-rear",
+    "any geometry fallback has no underlying intact thorax mesh, no gaps or garment thickness, common-height Z-distributed segments, and no cylinders",
+    "the visual sequence remains dark integrated Head/Mask, striped Thorax/front shell, and a separately dark unstriped rear Abdomen",
+    "integrated emissive eyes, mask, antennae, six articulated Upper/Lower legs, squat low-poly beetle silhouette, and front/rear segmentation remain readable",
+    "TB-R03A gait/body articulation, TB-R01 movement, collision, camera, interaction, gameplay loop, and all three levels remain unchanged",
+    "TB-001 through TB-R03A regressions with TB-H01 stabilization, preserved TB-R04 face identity, mandatory top/side/gameplay renders, Linux export, and all exported levels pass",
+    "only scenes/player.tscn and, if strictly necessary, scripts/player.gd change; no external asset, level, locomotion, animation, audio, or gameplay work is included"
+  ],
+  "validation": {
+    "type": "repo_script",
+    "path": "tests/run_tbr04b_acceptance.sh",
+    "args": ["/tmp/tbr04b-game-foundry-validation"],
+    "timeout_seconds": 900,
+    "success_markers": ["TBR04B_ACCEPTANCE_OK"]
+  },
+  "retry_policy": {"max_attempts": 2},
+  "on_failure": "escalate"
+}
