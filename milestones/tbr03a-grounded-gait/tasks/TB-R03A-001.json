@@ -1,0 +1,27 @@
+{
+  "id": "TB-R03A-001",
+  "title": "Ground and Articulate the Procedural Beetle Gait",
+  "objective": "Refine the existing TB-R03 gait so six two-segment legs visibly contact and push against the floor while restrained Body, thorax, and abdomen articulation conveys weight transfer without changing gameplay movement.",
+  "depends_on": [],
+  "allowed_scope": ["scenes/player.tscn", "scripts/player.gd"],
+  "acceptance": [
+    "each of the six stable leg roots contains mesh-bearing Upper and Lower segments whose transforms are captured from the authored neutral pose",
+    "neutral lower-leg geometry lies close to the local floor plane, improving on the measured TB-R03 minimum of approximately Y 0.0891 without deep clipping",
+    "all six Upper and Lower segments animate visibly, with swing endpoints lifted above support endpoints and opposing tripod phase preserved",
+    "leg sweep is clearer than TB-R03 while remaining attached, bounded, and stable across forward, strafe, backpedal, and diagonal movement",
+    "Body compression/bob and 1–3 degree-scale weight roll are restrained, Thorax articulates subtly, and Abdomen provides smaller opposing counter-motion",
+    "all articulated transforms blend smoothly from captured neutral poses and recover on idle without accumulation or snapping",
+    "CharacterBody root motion, collision, speed, controller, interaction, gameplay, beetle identity, and all prior slice behavior remain unchanged",
+    "TB-001 through TB-R03 regressions, grounded rendered evidence, Linux export, and exported runtime for all levels pass",
+    "no collision adjustment is made unless objectively necessary and no skeleton, IK, external asset, audio, or gameplay feature is introduced"
+  ],
+  "validation": {
+    "type": "repo_script",
+    "path": "tests/run_tbr03a_acceptance.sh",
+    "args": ["/tmp/tbr03a-game-foundry-validation"],
+    "timeout_seconds": 900,
+    "success_markers": ["TBR03A_ACCEPTANCE_OK"]
+  },
+  "retry_policy": {"max_attempts": 2},
+  "on_failure": "escalate"
+}
