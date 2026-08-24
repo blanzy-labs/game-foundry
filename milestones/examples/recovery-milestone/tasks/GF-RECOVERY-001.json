@@ -1,0 +1,11 @@
+{
+  "id": "GF-RECOVERY-001",
+  "title": "Create recovery marker 001",
+  "objective": "Create fixtures/recovery-project/src/marker-001.txt containing exactly REQUIRED_RECOVERY_MARKER followed by a newline.",
+  "depends_on": [],
+  "allowed_scope": ["fixtures/recovery-project/src/marker-001.txt"],
+  "acceptance": ["marker-001.txt contains REQUIRED_RECOVERY_MARKER", "the locked recovery design remains satisfied"],
+  "validation": {"type":"repo_script","path":"fixtures/recovery-project/acceptance/validate-task.sh","args":["GF-RECOVERY-001"],"timeout_seconds":60,"success_markers":["GF_RECOVERY_001_ACCEPTED"]},
+  "retry_policy": {"max_attempts": 3},
+  "on_failure": "retry"
+}

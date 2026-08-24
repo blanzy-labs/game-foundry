@@ -102,6 +102,8 @@ gf004_test_agent() {
     GF-CRITIC-002) target=fixtures/critic-project/src/marker-002.txt; marker=REQUIRED_CRITIC_MARKER_002 ;;
     GF-REPAIR-001) target=fixtures/repair-project/src/marker-001.txt; marker=REQUIRED_REPAIR_MARKER ;;
     GF-REPAIR-002) target=fixtures/repair-project/src/marker-002.txt; marker=REQUIRED_REPAIR_MARKER_002 ;;
+    GF-RECOVERY-001) target=fixtures/recovery-project/src/marker-001.txt; marker=REQUIRED_RECOVERY_MARKER ;;
+    GF-RECOVERY-002) target=fixtures/recovery-project/src/marker-002.txt; marker=REQUIRED_RECOVERY_MARKER_002 ;;
     *) return 1 ;;
   esac
   GF004_OPENCLAW_EXIT=0
@@ -135,6 +137,8 @@ gf004_test_repair_agent() {
   case "$GF004_TASK" in
     GF-REPAIR-001) target=fixtures/repair-project/src/marker-001.txt; marker=REQUIRED_REPAIR_MARKER ;;
     GF-REPAIR-002) target=fixtures/repair-project/src/marker-002.txt; marker=REQUIRED_REPAIR_MARKER_002 ;;
+    GF-RECOVERY-001) target=fixtures/recovery-project/src/marker-001.txt; marker=REQUIRED_RECOVERY_MARKER ;;
+    GF-RECOVERY-002) target=fixtures/recovery-project/src/marker-002.txt; marker=REQUIRED_RECOVERY_MARKER_002 ;;
     *) return 1 ;;
   esac
   GF004_OPENCLAW_EXIT=0
@@ -248,6 +252,8 @@ gf004_validate_candidate() {
   GF004_T_SCOPE=$(gf004_sum_seconds "$GF004_T_SCOPE" "$(gf004_elapsed "$scope_start" "$(date +%s%N)")")
   if [[ $GF004_SCOPE_STATUS != pass ]]; then GF004_CANDIDATE_FAILURE="scope validation failed: $GF004_SCOPE_REASON"; return 10; fi
 
+  gf008_snapshot_candidate "${GF004_CANDIDATE_ORDINAL:-1}" "$stage" || { GF004_CANDIDATE_FAILURE='candidate snapshot failed'; return 13; }
+
   if [[ $repair_fault == validator_mutation ]]; then printf '\n# GF-007 repair validator mutation test hook\n' >>"$validator_abs"; fi
   validator_post=$(gf_sha256 "$validator_abs")
   GF004_VALIDATOR_POST=$validator_post
@@ -264,6 +270,7 @@ gf004_validate_candidate() {
   if [[ $GF004_VALIDATION_EXIT -eq 0 ]] && $markers_ok; then GF004_VALIDATOR_STATUS=pass; else GF004_VALIDATOR_STATUS=fail; fi
   GF004_T_VALIDATION=$(gf004_sum_seconds "$GF004_T_VALIDATION" "$(gf004_elapsed "$validation_start" "$(date +%s%N)")")
   if [[ $GF004_VALIDATOR_STATUS != pass ]]; then GF004_CANDIDATE_FAILURE="deterministic validation failed (exit $GF004_VALIDATION_EXIT, markers=$markers_ok)"; return 12; fi
+  if ((GF004_REPAIR_ATTEMPTS_USED > 0)); then gf008_checkpoint REPAIR_DETERMINISTIC_PASSED "$stage"; else gf008_checkpoint DETERMINISTIC_PASSED "$stage"; fi
 }
 
 gf004_write_finding_tracking() {
@@ -311,8 +318,9 @@ gf004_run_critic() {
   before_status=$(git -C "$GF004_WORKSPACE" status --porcelain=v1 --untracked-files=all | sha256sum | cut -d' ' -f1)
   before_patch=$(git -C "$GF004_WORKSPACE" diff --binary | sha256sum | cut -d' ' -f1)
   before_branch=$(git -C "$GF004_REPO" rev-parse "$GF004_EXECUTION_BRANCH")
-  before_state=$(gf_sha256 "$GF004_STATE_FILE")
   GF004_CRITIC_CALLS=$((GF004_CRITIC_CALLS + 1))
+  gf008_checkpoint CRITIC_STARTED "$GF004_STAGE_DIR" || { GF004_CRITIC_ERROR='critic checkpoint failed'; return 4; }
+  before_state=$(gf_sha256 "$GF004_STATE_FILE")
   GF_GF007_CANDIDATE_INDEX="$candidate" "$GF_CONTROL_ROOT/scripts/gf-openai-critic.py" "$evidence_file" "$GF_SCHEMA_ROOT/critic-response.schema.json" "$critic_dir"
   critic_code=$?
   after_status=$(git -C "$GF004_WORKSPACE" status --porcelain=v1 --untracked-files=all | sha256sum | cut -d' ' -f1)
@@ -352,8 +360,14 @@ gf004_run_critic() {
     '{candidate:$candidate,stage:$stage,result:$status,response_id:(if $response_id=="" then null else $response_id end),blockers:$blockers,warnings:$warnings,observations:$observations,duration_seconds:$duration,input_tokens:$input,output_tokens:$output,evidence_path:$evidence}')
   temporary=$(mktemp "$GF004_CRITIC_HISTORY.tmp.XXXXXX") || return 4
   jq --argjson item "$history_item" '. + [$item]' "$GF004_CRITIC_HISTORY" >"$temporary" && mv "$temporary" "$GF004_CRITIC_HISTORY"
-  [[ $critic_code -eq 0 && $GF004_CRITIC_STATUS == pass ]] && return 0
-  [[ $critic_code -eq 3 && $GF004_CRITIC_STATUS == block ]] && return 3
+  if [[ $critic_code -eq 0 && $GF004_CRITIC_STATUS == pass ]]; then
+    if ((GF004_REPAIR_ATTEMPTS_USED > 0)); then gf008_checkpoint REPAIR_CRITIC_PASSED "$GF004_STAGE_DIR"; else gf008_checkpoint CRITIC_PASSED "$GF004_STAGE_DIR"; fi
+    return 0
+  fi
+  if [[ $critic_code -eq 3 && $GF004_CRITIC_STATUS == block ]]; then
+    if ((GF004_REPAIR_ATTEMPTS_USED > 0)); then gf008_checkpoint REPAIR_CRITIC_BLOCKED "$GF004_STAGE_DIR"; else gf008_checkpoint CRITIC_BLOCKED "$GF004_STAGE_DIR"; fi
+    return 3
+  fi
   return 4
 }
 
@@ -411,6 +425,8 @@ gf004_fail_execution() {
   gf_transition_task "$GF004_MILESTONE" "$GF004_TASK" fail execution_failure || true
   gf_atomic_state_update "$GF004_STATE_FILE" '.tasks[$task] += {last_run_id:$run,last_result:"fail",last_evidence:$evidence,failure_reason:$reason,critic_status:$critic_status}' \
     --arg task "$GF004_TASK" --arg run "$GF004_RUN_ID" --arg evidence "$GF004_ARTIFACT_REL" --arg reason "$reason" --arg critic_status "$GF004_CRITIC_STATUS" || true
+  gf008_checkpoint STATE_FAILED "${GF004_STAGE_DIR:-}" || true
+  gf_atomic_state_update "$GF004_STATE_FILE" 'del(.active_execution)' || true
   GF004_T_STATE=$(gf004_elapsed "$state_start" "$(date +%s%N)")
   next_result=$(gf_next_result "$GF004_MILESTONE")
   GF004_T_TOTAL=$(gf004_elapsed "$GF004_TOTAL_START" "$(date +%s%N)")
@@ -433,6 +449,8 @@ gf004_escalate_execution() {
   gf_transition_task "$GF004_MILESTONE" "$GF004_TASK" escalated critic_repair_exhausted || true
   gf_atomic_state_update "$GF004_STATE_FILE" '.tasks[$task] += {last_run_id:$run,last_result:"escalated",last_evidence:$evidence,failure_reason:$reason,critic_status:$critic_status,repair_attempts:$repairs}' \
     --arg task "$GF004_TASK" --arg run "$GF004_RUN_ID" --arg evidence "$GF004_ARTIFACT_REL" --arg reason "$reason" --arg critic_status "$GF004_CRITIC_STATUS" --argjson repairs "$GF004_REPAIR_ATTEMPTS_USED" || true
+  gf008_checkpoint STATE_ESCALATED "${GF004_STAGE_DIR:-}" || true
+  gf_atomic_state_update "$GF004_STATE_FILE" 'del(.active_execution)' || true
   GF004_T_STATE=$(gf004_elapsed "$state_start" "$(date +%s%N)")
   next_result=$(gf_next_result "$GF004_MILESTONE")
   GF004_T_TOTAL=$(gf004_elapsed "$GF004_TOTAL_START" "$(date +%s%N)")
@@ -481,6 +499,7 @@ gf_execute_one() {
   GF004_CRITIC_HISTORY="$GF004_ARTIFACT_DIR/critic-history.json" GF004_AGENT_HISTORY="$GF004_ARTIFACT_DIR/agent-history.json"
   printf '[]\n' >"$GF004_CRITIC_HISTORY"; printf '[]\n' >"$GF004_AGENT_HISTORY"
   GF004_OPENCLAW_EXIT=-1 GF004_VALIDATION_EXIT=-1 GF004_ACCEPTED_COMMIT=''
+  GF004_SNAPSHOT_REF='' GF004_SNAPSHOT_COMMIT='' GF004_SNAPSHOT_TREE='' GF004_CANDIDATE_ORDINAL=0
   GF004_AGENT_LINK='' GF004_AGENT_INDEX='' GF004_AGENT_ORIGINAL_WORKSPACE=''
   GF004_RUNTIME_STATUS=not_run GF004_RUNTIME_EVIDENCE='' GF004_SCOPE_STATUS=not_run GF004_VALIDATOR_STATUS=not_run GF004_CANDIDATE_FAILURE=''
   GF004_VALIDATOR_REL=$(jq -r '.validation.path' "$task_file") GF004_VALIDATOR_PRE='' GF004_VALIDATOR_POST=''
@@ -502,6 +521,8 @@ gf_execute_one() {
   gf_transition_task "$milestone_id" "$GF004_TASK" running execution_claim || return 1
   gf_atomic_state_update "$GF004_STATE_FILE" '.tasks[$task] += {last_run_id:$run,last_result:"running",last_evidence:$evidence,started_at:$started,source_base_commit:$head}' \
     --arg task "$GF004_TASK" --arg run "$GF004_RUN_ID" --arg evidence "$GF004_ARTIFACT_REL" --arg started "$(gf_now)" --arg head "$GF004_PRE_COMMIT" || return 1
+  gf008_claim || { gf_error 'EXECUTION REFUSED: durable execution claim failed'; return 1; }
+  flock -u 9
   git -C "$GF004_REPO" worktree add "$GF004_WORKSPACE" "$GF004_EXECUTION_BRANCH" >"$GF004_ARTIFACT_DIR/worktree.log" 2>&1 || { gf004_fail_execution 'isolated worktree creation failed'; return 1; }
   jq -n --arg repository "$GF004_REPO" --arg branch "$GF004_EXECUTION_BRANCH" --arg commit "$GF004_PRE_COMMIT" '{repository:$repository,execution_branch:$branch,head_commit:$commit}' >"$GF004_ARTIFACT_DIR/source-before.json"
   validator_abs="$GF004_WORKSPACE/$GF004_VALIDATOR_REL"
@@ -510,6 +531,7 @@ gf_execute_one() {
   [[ $validator_real == "$GF004_WORKSPACE/"* ]] || { gf004_fail_execution 'validator escapes source repository'; return 1; }
   gf004_matches_scope "$GF004_VALIDATOR_REL" && { gf004_fail_execution 'validator is inside allowed source scope'; return 1; }
   GF004_VALIDATOR_PRE=$(gf_sha256 "$validator_abs")
+  gf008_checkpoint WORKTREE_READY || { gf004_fail_execution 'worktree checkpoint failed'; return 1; }
 
   stage="$GF004_ARTIFACT_DIR/attempt-01"; GF004_STAGE_DIR=$stage; mkdir -p "$stage"
   prompt_start=$(date +%s%N)
@@ -518,6 +540,7 @@ gf_execute_one() {
   GF004_T_PROMPT=$(gf004_elapsed "$prompt_start" "$(date +%s%N)")
   if [[ ${GF_GF004_ENABLE_TEST_HOOKS:-0} == 1 ]]; then test_fault=${GF_GF004_FAULT:-simulate_success}; fi
   agent_start=$(date +%s%N); GF004_CODEX_INVOCATIONS=1
+  gf008_checkpoint AGENT_STARTED "$stage" || { gf004_fail_execution 'agent start checkpoint failed'; return 1; }
   if [[ -n $test_fault ]]; then gf004_test_agent "$GF004_WORKSPACE" "$stage" "$test_fault"; agent_ok=$?; else gf004_real_agent "$GF004_WORKSPACE" "$stage/prompt.md" "$stage" "$GF004_RUN_ID-initial"; agent_ok=$?; fi
   agent_duration=$(gf004_elapsed "$agent_start" "$(date +%s%N)"); GF004_T_AGENT=$agent_duration
   [[ $agent_ok -eq 0 ]] || { GF004_RUNTIME_STATUS=fail; gf004_append_agent_history initial 1 "$stage" "$agent_duration" fail; gf004_fail_execution "OpenClaw/Codex execution failed (exit $GF004_OPENCLAW_EXIT)"; return 1; }
@@ -525,8 +548,10 @@ gf_execute_one() {
   $runtime_ok || { GF004_RUNTIME_STATUS=fail; gf004_append_agent_history initial 1 "$stage" "$agent_duration" fail; gf004_fail_execution 'Codex runtime ownership was not proven'; return 1; }
   GF004_RUNTIME_STATUS=pass; GF004_RUNTIME_EVIDENCE='OpenClaw result/audit or Gateway evidence recorded Codex runtime ownership'
   gf004_append_agent_history initial 1 "$stage" "$agent_duration" pass || { gf004_fail_execution 'agent history preservation failed'; return 1; }
+  gf008_checkpoint AGENT_COMPLETED "$stage" || { gf004_fail_execution 'agent completion checkpoint failed'; return 1; }
   if [[ ${GF_GF006_ENABLE_TEST_HOOKS:-0} == 1 && ${GF_GF006_INJECT_FORBIDDEN_MARKER:-0} == 1 ]]; then printf 'FORBIDDEN_DESIGN_MARKER\n' >>"$GF004_WORKSPACE/fixtures/critic-project/src/marker-001.txt"; fi
   if [[ ${GF_GF007_ENABLE_TEST_HOOKS:-0} == 1 && ${GF_GF007_INITIAL_FORBIDDEN:-0} == 1 ]]; then printf 'FORBIDDEN_DESIGN_MARKER\n' >>"$GF004_WORKSPACE/fixtures/repair-project/src/marker-001.txt"; fi
+  GF004_CANDIDATE_ORDINAL=1
   gf004_validate_candidate "$task_file" "$validator_abs" "$stage" "$([[ $test_fault == validator_mutation ]] && printf validator_mutation)" || { gf004_fail_execution "$GF004_CANDIDATE_FAILURE"; return 1; }
 
   candidate=1
@@ -546,13 +571,15 @@ gf_execute_one() {
         gf004_render_repair_prompt "$task_file" "$repair" "$previous_review" "$stage/prompt.md" || { gf004_fail_execution 'repair contract generation failed'; return 1; }
         prompt_duration=$(gf004_elapsed "$prompt_start" "$(date +%s%N)"); GF004_T_PROMPT=$(gf004_sum_seconds "$GF004_T_PROMPT" "$prompt_duration")
         repair_fault=''; [[ ${GF_GF007_REPAIR_AGENT_TEST_DOUBLE:-0} == 1 ]] && repair_fault=${GF_GF007_REPAIR_FAULT:-repair_success}
-        agent_start=$(date +%s%N); GF004_CODEX_INVOCATIONS=$((GF004_CODEX_INVOCATIONS + 1)); GF004_REPAIR_CODEX_CALLS=$((GF004_REPAIR_CODEX_CALLS + 1))
+        agent_start=$(date +%s%N); GF004_CODEX_INVOCATIONS=$((GF004_CODEX_INVOCATIONS + 1)); GF004_REPAIR_CODEX_CALLS=$((GF004_REPAIR_CODEX_CALLS + 1)); GF004_CANDIDATE_ORDINAL=$candidate
+        gf008_checkpoint REPAIR_STARTED "$stage" || { gf004_fail_execution 'repair start checkpoint failed'; return 1; }
         if [[ -n $repair_fault ]]; then gf004_test_repair_agent "$GF004_WORKSPACE" "$stage" "$repair_fault"; agent_ok=$?; else gf004_real_agent "$GF004_WORKSPACE" "$stage/prompt.md" "$stage" "$GF004_RUN_ID-repair-$repair"; agent_ok=$?; fi
         agent_duration=$(gf004_elapsed "$agent_start" "$(date +%s%N)"); GF004_T_AGENT=$(gf004_sum_seconds "$GF004_T_AGENT" "$agent_duration"); GF004_REPAIR_CODEX_DURATION=$(gf004_sum_seconds "$GF004_REPAIR_CODEX_DURATION" "$agent_duration")
         if [[ $agent_ok -ne 0 ]]; then GF004_RUNTIME_STATUS=fail; gf004_append_agent_history repair "$repair" "$stage" "$agent_duration" fail; gf004_fail_execution "OpenClaw/Codex repair failed (exit $GF004_OPENCLAW_EXIT)"; return 1; fi
         if [[ -n $repair_fault ]]; then runtime_ok=true; elif gf004_runtime_is_proven "$stage"; then runtime_ok=true; else runtime_ok=false; fi
         $runtime_ok || { GF004_RUNTIME_STATUS=fail; gf004_append_agent_history repair "$repair" "$stage" "$agent_duration" fail; gf004_fail_execution 'Codex repair runtime ownership was not proven'; return 1; }
         GF004_RUNTIME_STATUS=pass; gf004_append_agent_history repair "$repair" "$stage" "$agent_duration" pass || { gf004_fail_execution 'repair agent history preservation failed'; return 1; }
+        gf008_checkpoint REPAIR_AGENT_COMPLETED "$stage" || { gf004_fail_execution 'repair completion checkpoint failed'; return 1; }
         gf004_validate_candidate "$task_file" "$validator_abs" "$stage" "$repair_fault" || { gf004_fail_execution "$GF004_CANDIDATE_FAILURE"; return 1; }
         critic_start=$(date +%s%N); GF004_CRITIC_EVIDENCE_REL="${stage#"$GF_CONTROL_ROOT/"}/critic"
         gf004_run_critic "$task_file" "$validator_abs" "$candidate"; critic_code=$?
@@ -573,18 +600,23 @@ gf_execute_one() {
   git -C "$GF004_WORKSPACE" -c user.name='Game Foundry' -c user.email='game-foundry@local.invalid' commit -m "$commit_message" >"$GF004_ARTIFACT_DIR/commit.log" 2>&1 || { gf004_fail_execution 'Game Foundry commit failed'; return 1; }
   GF004_ACCEPTED_COMMIT=$(git -C "$GF004_WORKSPACE" rev-parse HEAD)
   jq -n --arg pre_task_commit "$GF004_PRE_COMMIT" --arg accepted_commit "$GF004_ACCEPTED_COMMIT" --arg message "$commit_message" --argjson changed_files "$(printf '%s\n' "${GF004_CHANGED_FILES[@]}" | jq -Rsc 'split("\n")|map(select(length>0))')" '{pre_task_commit:$pre_task_commit,accepted_commit:$accepted_commit,commit_message:$message,changed_files:$changed_files,owner:"Game Foundry"}' >"$GF004_ARTIFACT_DIR/commit.json"
+  gf008_checkpoint ACCEPTED_COMMIT_CREATED "$GF004_STAGE_DIR" || { gf004_fail_execution 'accepted commit checkpoint failed'; return 1; }
   GF004_T_COMMIT=$(gf004_elapsed "$commit_start" "$(date +%s%N)")
   state_backup="$GF004_ARTIFACT_DIR/state-before-pass.json"; cp "$GF004_STATE_FILE" "$state_backup"
   cleanup_start=$(date +%s%N)
   git -C "$GF004_REPO" worktree remove "$GF004_WORKSPACE" >>"$GF004_ARTIFACT_DIR/worktree.log" 2>&1 || { git -C "$GF004_REPO" worktree remove --force "$GF004_WORKSPACE" >>"$GF004_ARTIFACT_DIR/worktree.log" 2>&1 || true; git -C "$GF004_REPO" branch -f "$GF004_EXECUTION_BRANCH" "$GF004_PRE_COMMIT" >/dev/null 2>&1 || true; GF004_ACCEPTED_COMMIT=''; gf004_fail_execution 'post-commit cleanup failed and execution branch was rolled back'; return 1; }
   gf004_restore_agent_workspace
   [[ $(git -C "$GF004_REPO" rev-parse "$GF004_EXECUTION_BRANCH") == "$GF004_ACCEPTED_COMMIT" ]] || { git -C "$GF004_REPO" branch -f "$GF004_EXECUTION_BRANCH" "$GF004_PRE_COMMIT" >/dev/null 2>&1 || true; GF004_ACCEPTED_COMMIT=''; gf004_fail_execution 'accepted execution branch verification failed'; return 1; }
+  gf008_checkpoint CLEANUP_COMPLETED "$GF004_STAGE_DIR" || { gf004_fail_execution 'cleanup checkpoint failed'; return 1; }
   GF004_T_CLEANUP=$(gf004_elapsed "$cleanup_start" "$(date +%s%N)")
   state_start=$(date +%s%N)
   if ! gf_transition_task "$milestone_id" "$GF004_TASK" pass deterministic_acceptance || ! gf_atomic_state_update "$GF004_STATE_FILE" '.source.head_commit=$commit | .tasks[$task] += {last_run_id:$run,accepted_commit:$commit,last_result:"pass",last_evidence:$evidence,critic_status:$critic_status,repair_attempts:$repairs,repair_outcome:$outcome}' \
     --arg task "$GF004_TASK" --arg run "$GF004_RUN_ID" --arg commit "$GF004_ACCEPTED_COMMIT" --arg evidence "$GF004_ARTIFACT_REL" --arg critic_status "$GF004_CRITIC_STATUS" --argjson repairs "$GF004_REPAIR_ATTEMPTS_USED" --arg outcome "$GF004_REPAIR_OUTCOME"; then
     cp "$state_backup" "$GF004_STATE_FILE"; git -C "$GF004_REPO" branch -f "$GF004_EXECUTION_BRANCH" "$GF004_PRE_COMMIT" >/dev/null 2>&1 || true; GF004_ACCEPTED_COMMIT=''; gf004_fail_execution 'PASS state persistence failed and execution branch was rolled back'; return 1
   fi
+  gf008_checkpoint STATE_PASSED "$GF004_STAGE_DIR" || return 1
+  gf_atomic_state_update "$GF004_STATE_FILE" 'del(.active_execution)' || return 1
+  git -C "$GF004_REPO" for-each-ref --format='%(refname)' "refs/game-foundry/recovery/$GF004_RUN_ID/" | while IFS= read -r recovery_ref; do [[ -z $recovery_ref ]] || git -C "$GF004_REPO" update-ref -d "$recovery_ref"; done
   GF004_T_STATE=$(gf004_elapsed "$state_start" "$(date +%s%N)")
   next_after=$(gf_next_result "$milestone_id"); [[ $next_after == NEXT_TASK=* ]] && next_task=${next_after#NEXT_TASK=}
   GF004_T_TOTAL=$(gf004_elapsed "$GF004_TOTAL_START" "$(date +%s%N)")

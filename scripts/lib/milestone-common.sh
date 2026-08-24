@@ -47,6 +47,10 @@ gf_validate_package() {
         (.review_policy.repair.max_attempts | type == "number" and . >= 0 and . <= 5 and floor == .) and
         ((.review_policy.repair.enabled | not) or .review_policy.repair.max_attempts > 0)
       ))
+    )) and
+    ((has("recovery_policy") | not) or (
+      (.recovery_policy | type == "object") and
+      (.recovery_policy.max_agent_restarts | type == "number" and . >= 0 and . <= 10 and floor == .)
     ))
   ' "$GF_MANIFEST" >/dev/null || { gf_error 'VALIDATION FAIL: milestone contract does not match schema'; return 1; }
 
@@ -59,6 +63,7 @@ gf_validate_package() {
   GF_REVIEW_REQUIRED=$(jq -r '.review_policy.required // false' "$GF_MANIFEST")
   GF_REPAIR_ENABLED=$(jq -r '.review_policy.repair.enabled // false' "$GF_MANIFEST")
   GF_REPAIR_MAX_ATTEMPTS=$(jq -r '.review_policy.repair.max_attempts // 0' "$GF_MANIFEST")
+  GF_RECOVERY_MAX_AGENT_RESTARTS=$(jq -r '.recovery_policy.max_agent_restarts // 2' "$GF_MANIFEST")
   GF_DESIGN=$(gf_safe_package_file "$GF_PACKAGE" "$GF_DESIGN_REL") || { gf_error 'VALIDATION FAIL: invalid design path'; return 1; }
   GF_GUIDELINES=$(gf_safe_package_file "$GF_PACKAGE" "$GF_GUIDELINES_REL") || { gf_error 'VALIDATION FAIL: invalid guidelines path'; return 1; }
 

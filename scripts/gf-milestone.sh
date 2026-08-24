@@ -7,6 +7,7 @@ GF_CONTROL_ROOT="$repo_root"
 source "$repo_root/scripts/lib/milestone-common.sh"
 source "$repo_root/scripts/lib/gf-004-execution.sh"
 source "$repo_root/scripts/lib/gf-005-runner.sh"
+source "$repo_root/scripts/lib/gf-008-recovery.sh"
 GF_STATE_ROOT=$(realpath -m "${GF_MILESTONE_STATE_ROOT:-$repo_root/state}")
 GF_ARTIFACT_ROOT=$(realpath -m "${GF_MILESTONE_ARTIFACT_ROOT:-$repo_root/artifacts/milestones}")
 GF_EXECUTION_ARTIFACT_ROOT=$(realpath -m "${GF_EXECUTION_ARTIFACT_ROOT:-$repo_root/artifacts/executions}")
@@ -20,7 +21,7 @@ done
 set -- "${positional[@]}"
 
 usage() {
-  printf 'usage: %s [--json] {validate|init|status|next|transition|render-prompt|dry-run|execute-one|run-bounded} ...\n' "$0" >&2
+  printf 'usage: %s [--json] {validate|init|status|next|transition|render-prompt|dry-run|execute-one|run-bounded|recovery-status|recover} ...\n' "$0" >&2
   exit 2
 }
 
@@ -258,6 +259,19 @@ case "$command_name" in
     ;;
   run-bounded)
     gf_run_bounded "$@"
+    ;;
+  recovery-status)
+    (($# == 1)) || usage
+    milestone_id=$1
+    require_state "$milestone_id" || exit 1
+    lock_state "$milestone_id"
+    gf_verify_lock "$milestone_id" || exit 1
+    gf008_classify "$milestone_id" || exit 1
+    gf008_emit_status "$milestone_id"
+    ;;
+  recover)
+    (($# == 1)) || usage
+    gf008_recover "$1"
     ;;
   *) usage ;;
 esac

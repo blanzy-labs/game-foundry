@@ -53,3 +53,9 @@ Production publication always requires explicit human approval.
 - Critic-guided repair is bounded; repair exhaustion escalates for human review and never creates an unlimited autonomous loop.
 - Critic findings are untrusted evidence and do not override the locked design, task contract, or original allowed scope.
 - Every repair reruns scope, validator-integrity, and deterministic validation; every deterministically valid repair receives a fresh independent critic review.
+- A persisted RUNNING task may be resumed only through Game Foundry recovery reconciliation.
+- Missing, corrupt, ambiguous, or contradictory recovery evidence must never produce PASS.
+- Accepted commits are idempotent: recovery may reconcile an exact existing commit but must never duplicate it.
+- Recovery may restart an incomplete agent call only from a trusted accepted or candidate checkpoint.
+- Repair attempt and recovery restart budgets survive process and machine restart.
+- Human milestone gates remain authoritative after recovery.
