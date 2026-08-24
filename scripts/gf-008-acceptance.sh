@@ -112,23 +112,23 @@ if [[ $again -eq 0 && $count -eq 1 ]] && jq -e '.recovery_action=="NO_RECOVERY_N
 commit_case_dir="$CASE_ARTIFACT"
 
 # I — blocker resumes repair at ordinal one.
-make_case repair-block; init_case; GF008_SEQUENCE=blocker,warning_only GF008_FORBIDDEN=1 GF008_REPAIR_DOUBLE=1 GF008_REPAIR_FAULT=repair_success run_crash CRITIC_BLOCKED
+make_case repair-block; init_case; GF008_SEQUENCE=blocker,warning_only GF008_REPAIR_DOUBLE=1 GF008_REPAIR_FAULT=repair_success run_crash CRITIC_BLOCKED
 GF008_SEQUENCE=blocker,warning_only GF008_REPAIR_DOUBLE=1 GF008_REPAIR_FAULT=repair_success controlled_recover >"$CASE_ARTIFACT/recovery-result.json" 2>"$CASE_ARTIFACT/recovery.stderr.log"; rc=$?
 if [[ $rc -eq 0 ]] && jq -e '.recovery_action=="RESUME_REPAIR" and .result=="pass" and .counters.repair_resumptions==1' "$CASE_ARTIFACT/recovery-result.json" >/dev/null; then pass_case I_critic_block_repair_resume; else fail_case I_critic_block_repair_resume; fi
 repair_case_dir="$CASE_ARTIFACT"
 
 # J — crash during repair reruns the same ordinal.
-make_case repair-agent; init_case; GF008_SEQUENCE=blocker,warning_only GF008_FORBIDDEN=1 GF008_REPAIR_DOUBLE=1 GF008_REPAIR_FAULT=repair_success run_crash REPAIR_STARTED
+make_case repair-agent; init_case; GF008_SEQUENCE=blocker,warning_only GF008_REPAIR_DOUBLE=1 GF008_REPAIR_FAULT=repair_success run_crash REPAIR_STARTED
 GF008_SEQUENCE=blocker,warning_only GF008_REPAIR_DOUBLE=1 GF008_REPAIR_FAULT=repair_success controlled_recover >"$CASE_ARTIFACT/recovery-result.json" 2>"$CASE_ARTIFACT/recovery.stderr.log"; rc=$?
 if [[ $rc -eq 0 ]] && jq -e '.result=="pass" and .codex_calls==1 and .counters.repair_resumptions==1' "$CASE_ARTIFACT/recovery-result.json" >/dev/null && jq -e '.tasks["GF-RECOVERY-001"].repair_attempts==1' "$CASE_STATE/GF-RECOVERY-M001/state.json" >/dev/null; then pass_case J_repair_agent_same_ordinal; else fail_case J_repair_agent_same_ordinal; fi
 
 # K — repair deterministic PASS resumes only critic re-review.
-make_case repair-deterministic; init_case; GF008_SEQUENCE=blocker,warning_only GF008_FORBIDDEN=1 GF008_REPAIR_DOUBLE=1 GF008_REPAIR_FAULT=repair_success run_crash REPAIR_DETERMINISTIC_PASSED
+make_case repair-deterministic; init_case; GF008_SEQUENCE=blocker,warning_only GF008_REPAIR_DOUBLE=1 GF008_REPAIR_FAULT=repair_success run_crash REPAIR_DETERMINISTIC_PASSED
 GF008_SEQUENCE=blocker,warning_only GF008_REPAIR_DOUBLE=1 GF008_REPAIR_FAULT=repair_success controlled_recover >"$CASE_ARTIFACT/recovery-result.json" 2>"$CASE_ARTIFACT/recovery.stderr.log"; rc=$?
 if [[ $rc -eq 0 ]] && jq -e '.recovery_action=="RESUME_REPAIR_CRITIC" and .codex_calls==0 and .critic_calls==1' "$CASE_ARTIFACT/recovery-result.json" >/dev/null; then pass_case K_repair_deterministic_resume; else fail_case K_repair_deterministic_resume; fi
 
 # L — repair 1 remains consumed while interrupted repair 2 restarts as ordinal 2.
-make_case repair-budget; init_case; GF008_SEQUENCE=blocker,blocker,warning_only GF008_FORBIDDEN=1 GF008_REPAIR_DOUBLE=1 GF008_REPAIR_FAULT=persistent_blocker run_crash REPAIR_STARTED
+make_case repair-budget; init_case; GF008_SEQUENCE=blocker,blocker,warning_only GF008_REPAIR_DOUBLE=1 GF008_REPAIR_FAULT=persistent_blocker run_crash REPAIR_STARTED
 # First REPAIR_STARTED is ordinal 1; allow it to crash, recover and deliberately crash ordinal 1 again is not L. Advance once by changing the target hook through journal-aware ordinal selector.
 # Build the ordinal-2 condition deterministically by changing the crash hook after the first repair critic checkpoint in a normal child.
 rm -f "$CASE_ARTIFACT/recovery-status.json"
