@@ -1,0 +1,27 @@
+{
+  "id": "TB-R04-001",
+  "title": "Integrate the Beetle Face and Striped Burglar Costume",
+  "objective": "Turn the accepted primitive beetle into a more coherent, readable low-poly criminal protagonist by integrating its eyes into the head/mask and adding a bold striped thorax costume without changing locomotion or gameplay.",
+  "depends_on": [],
+  "allowed_scope": ["scenes/player.tscn", "scripts/player.gd"],
+  "acceptance": [
+    "EyeLeft and EyeRight are stable mesh-bearing descendants of Head or Mask, separated and bright or emissive enough to read as inset face openings rather than floating blocks",
+    "the mesh-bearing Head and dark burglar Mask remain coherent, forward-facing, low-poly, and immediately legible as a criminal bug face",
+    "a mesh-bearing Shirt hierarchy is centered around the thorax and contains at least three broad named Stripe meshes with strong light/dark contrast",
+    "the sleeveless costume preserves visible insect segmentation, all six leg attachments, both antennae, squat posture, and a clearly non-humanoid dung beetle silhouette",
+    "all character construction remains deterministic and uses only supported low-segment Godot primitive meshes with no external model, texture, rig, or animation dependency",
+    "the dark shell, bright face accents, and striped costume improve readability against neon magenta/purple environments at normal gameplay distance",
+    "TB-R03A grounded gait, leg and body articulation, camera-relative movement, controller, collision, interaction, gameplay loop, and all three levels remain unchanged",
+    "TB-001 through TB-R03A regressions, normal and close rendered evidence, Linux export, and exported runtime for all levels pass",
+    "the change remains within scenes/player.tscn and scripts/player.gd and introduces no gameplay, audio, stealth, door, trap, or power-up system"
+  ],
+  "validation": {
+    "type": "repo_script",
+    "path": "tests/run_tbr04_acceptance.sh",
+    "args": ["/tmp/tbr04-game-foundry-validation"],
+    "timeout_seconds": 900,
+    "success_markers": ["TBR04_ACCEPTANCE_OK"]
+  },
+  "retry_policy": {"max_attempts": 2},
+  "on_failure": "escalate"
+}
