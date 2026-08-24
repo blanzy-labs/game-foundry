@@ -1,0 +1,23 @@
+{
+  "id": "TB-CAP-001",
+  "title": "Create Existing-Capability Stress Level",
+  "objective": "Design and create levels/restroom_003.json as a sprawling, intentional neon restroom labyrinth using only the target repository's currently enabled data-driven level capabilities and no runtime changes.",
+  "depends_on": [],
+  "allowed_scope": ["levels/restroom_003.json"],
+  "acceptance": [
+    "restroom_003 passes the trusted TB-003 loader, complexity, runtime, gameplay, regression, screenshot, Linux export, and exported-runtime gate",
+    "the level contains four visually distinct spatial zones, meaningful branching, two deliberate decoy/dead-end concepts, a central transition, and two small surprises",
+    "10–16 toilets include at least 6 collectibles and at least 3 deliberate empty-toilet decoys, with objective count equal to collectibles",
+    "30–70 box primitives, 6–14 labels, and 6–12 lights with at least 3 light colors form an intentional ground-traversable level",
+    "no source file other than levels/restroom_003.json changes and no gameplay capability or schema field is added"
+  ],
+  "validation": {
+    "type": "repo_script",
+    "path": "tests/run_tb003_acceptance.sh",
+    "args": ["/tmp/tb003-game-foundry-validation"],
+    "timeout_seconds": 600,
+    "success_markers": ["TB003_ACCEPTANCE_OK"]
+  },
+  "retry_policy": {"max_attempts": 2},
+  "on_failure": "escalate"
+}
