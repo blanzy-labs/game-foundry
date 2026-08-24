@@ -28,6 +28,7 @@ gf008_maybe_crash() {
     sleep "${GF_GF008_PAUSE_SECONDS:-30}"
   fi
   [[ ${GF_GF008_ENABLE_TEST_HOOKS:-0} == 1 && ${GF_GF008_CRASH_AT:-} == "$checkpoint" ]] || return 0
+  if [[ -n ${GF_GF008_CRASH_REPAIR_ORDINAL:-} && ${GF004_REPAIR_ATTEMPTS_USED:-0} -ne ${GF_GF008_CRASH_REPAIR_ORDINAL} ]]; then return 0; fi
   jq -n --arg checkpoint "$checkpoint" --arg timestamp "$(gf_now)" --arg pid "$$" \
     '{test_hook:true,checkpoint:$checkpoint,timestamp:$timestamp,pid:($pid|tonumber)}' >"$GF004_ARTIFACT_DIR/crash-evidence.json"
   sync -f "$GF004_ARTIFACT_DIR/crash-evidence.json" 2>/dev/null || true
@@ -355,7 +356,7 @@ gf008_create_accepted_commit() {
 
 gf008_recover() {
   local milestone_id=$1 state_dir original action task_file validator_abs validator_real stage prompt_generated test_fault='' repair_fault='' agent_ok runtime_ok
-  local agent_start agent_duration critic_code candidate repair previous_review created=false max_restarts restarts
+  local agent_start agent_duration critic_code candidate repair previous_review trusted_stage created=false max_restarts restarts
   state_dir=$(gf_state_dir "$milestone_id")
   [[ -f $state_dir/state.json ]] || { gf_error "MILESTONE STATE MISSING: $milestone_id"; return 1; }
   mkdir -p "$state_dir"; exec 8>"$state_dir/.execution.lock"
@@ -442,6 +443,11 @@ gf008_recover() {
     RESUME_REPAIR_DETERMINISTIC)
       GF004_CANDIDATE_ORDINAL=$((GF004_REPAIR_ATTEMPTS_USED + 1))
       gf004_validate_candidate "$task_file" "$validator_abs" "$stage" || { gf008_fail_recovery "$GF004_CANDIDATE_FAILURE"; return 1; }
+      ;;
+    RESUME_REPAIR)
+      trusted_stage=$(jq -r '[.[]|select(.result=="block")][-1].evidence_path // ""' "$GF004_CRITIC_HISTORY")
+      trusted_stage=${trusted_stage%/critic}
+      gf008_load_validation_evidence "$trusted_stage" "$validator_abs" || { gf008_escalate_recovery "$milestone_id" 'prior repair candidate evidence is incomplete or contradictory'; return 1; }
       ;;
     *)
       gf008_load_validation_evidence "$stage" "$validator_abs" || { gf008_escalate_recovery "$milestone_id" 'deterministic PASS evidence is incomplete or contradictory'; return 1; }

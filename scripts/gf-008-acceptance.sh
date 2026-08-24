@@ -49,7 +49,7 @@ controlled_execute() {
   local checkpoint=$1
   GF_GF004_ENABLE_TEST_HOOKS=1 GF_GF004_FAULT=simulate_success GF_GF007_ENABLE_TEST_HOOKS=1 GF_GF007_CRITIC_SEQUENCE="${GF008_SEQUENCE:-warning_only}" \
     GF_GF007_INITIAL_FORBIDDEN="${GF008_FORBIDDEN:-0}" GF_GF007_REPAIR_AGENT_TEST_DOUBLE="${GF008_REPAIR_DOUBLE:-0}" GF_GF007_REPAIR_FAULT="${GF008_REPAIR_FAULT:-repair_success}" \
-    GF_OPENAI_CRITIC_MODEL=test GF_GF008_ENABLE_TEST_HOOKS=1 GF_GF008_CRASH_AT="$checkpoint" case_cli execute-one GF-RECOVERY-M001 --json
+    GF_OPENAI_CRITIC_MODEL=test GF_GF008_ENABLE_TEST_HOOKS=1 GF_GF008_CRASH_AT="$checkpoint" GF_GF008_CRASH_REPAIR_ORDINAL="${GF008_CRASH_REPAIR_ORDINAL:-}" case_cli execute-one GF-RECOVERY-M001 --json
 }
 controlled_recover() {
   GF_GF004_ENABLE_TEST_HOOKS=1 GF_GF004_FAULT=simulate_success GF_GF007_ENABLE_TEST_HOOKS=1 GF_GF007_CRITIC_SEQUENCE="${GF008_SEQUENCE:-warning_only}" \
@@ -128,17 +128,9 @@ GF008_SEQUENCE=blocker,warning_only GF008_REPAIR_DOUBLE=1 GF008_REPAIR_FAULT=rep
 if [[ $rc -eq 0 ]] && jq -e '.recovery_action=="RESUME_REPAIR_CRITIC" and .codex_calls==0 and .critic_calls==1' "$CASE_ARTIFACT/recovery-result.json" >/dev/null; then pass_case K_repair_deterministic_resume; else fail_case K_repair_deterministic_resume; fi
 
 # L — repair 1 remains consumed while interrupted repair 2 restarts as ordinal 2.
-make_case repair-budget; init_case; GF008_SEQUENCE=blocker,blocker,warning_only GF008_REPAIR_DOUBLE=1 GF008_REPAIR_FAULT=persistent_blocker run_crash REPAIR_STARTED
-# First REPAIR_STARTED is ordinal 1; allow it to crash, recover and deliberately crash ordinal 1 again is not L. Advance once by changing the target hook through journal-aware ordinal selector.
-# Build the ordinal-2 condition deterministically by changing the crash hook after the first repair critic checkpoint in a normal child.
-rm -f "$CASE_ARTIFACT/recovery-status.json"
-GF008_RECOVERY_HOOKS=0 GF008_SEQUENCE=blocker,blocker,warning_only GF008_REPAIR_DOUBLE=1 GF008_REPAIR_FAULT=persistent_blocker controlled_recover >"$CASE_ARTIFACT/repair1-result.json" 2>"$CASE_ARTIFACT/repair1.stderr.log"; first_repair_rc=$?
-# The bounded max is separately proven by restart exhaustion below; persistency is asserted from the completed two-attempt history when blocked.
-if [[ $first_repair_rc -ne 0 ]] && jq -e '.tasks["GF-RECOVERY-001"].status=="escalated" and .tasks["GF-RECOVERY-001"].recovery_execution.repair_attempt==2' "$CASE_STATE/GF-RECOVERY-M001/state.json" >/dev/null 2>&1; then pass_case L_repair_budget_persistence; else
-  # A successful second-candidate sequence also proves ordinal accounting if policy artifacts show candidates 2 and 3.
-  refs=$(find "$CASE_ARTIFACT/executions" -name candidate-snapshot.json -type f | wc -l)
-  if ((refs >= 2)); then pass_case L_repair_budget_persistence; else fail_case L_repair_budget_persistence; fi
-fi
+make_case repair-budget; init_case; GF008_SEQUENCE=blocker,blocker,warning_only GF008_REPAIR_DOUBLE=1 GF008_REPAIR_FAULT=repair_success GF008_CRASH_REPAIR_ORDINAL=2 run_crash REPAIR_STARTED
+GF008_SEQUENCE=blocker,blocker,warning_only GF008_REPAIR_DOUBLE=1 GF008_REPAIR_FAULT=repair_success controlled_recover >"$CASE_ARTIFACT/recovery-result.json" 2>"$CASE_ARTIFACT/recovery.stderr.log"; rc=$?
+if [[ $rc -eq 0 ]] && jq -e '.original_checkpoint=="REPAIR_STARTED" and .codex_calls==1 and .result=="pass"' "$CASE_ARTIFACT/recovery-result.json" >/dev/null && jq -e '.tasks["GF-RECOVERY-001"].repair_attempts==2' "$CASE_STATE/GF-RECOVERY-M001/state.json" >/dev/null; then pass_case L_repair_budget_persistence; else fail_case L_repair_budget_persistence; fi
 
 # M — repeated process loss exhausts the independent recovery restart budget.
 make_case restart-exhaustion; init_case; run_crash AGENT_STARTED
