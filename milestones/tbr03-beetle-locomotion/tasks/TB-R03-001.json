@@ -1,0 +1,26 @@
+{
+  "id": "TB-R03-001",
+  "title": "Add Procedural Alternating-Tripod Locomotion",
+  "objective": "Make the low-poly beetle visibly scuttle through procedural transforms driven by actual horizontal velocity, with opposing tripod leg groups, restrained body motion, subtle antenna response, smooth idle blending, and no change to root gameplay movement.",
+  "depends_on": [],
+  "allowed_scope": ["scripts/player.gd", "scenes/player.tscn", "scripts/beetle_locomotion.gd"],
+  "acceptance": [
+    "all six named legs receive visible procedural gait influence and the two prescribed tripod groups move approximately opposite one another",
+    "gait phase advances only while horizontal velocity exceeds a small threshold and gait frequency scales safely with horizontal speed",
+    "movement starts through a smooth locomotion weight and stopping returns leg/body transforms toward captured neutral poses rather than freezing mid-stride",
+    "visual Body receives restrained 0.02–0.05-scale bob and at most subtle sway while both antennae react modestly",
+    "animation modifies only the visual hierarchy and never supplies CharacterBody root motion or changes gameplay velocity, speed, gravity, collision, or interaction",
+    "TB-R01 controller behavior and TB-R02 anatomy/identity remain intact, with all TB-001 through TB-R02 regressions passing",
+    "idle and moving rendered evidence differ, Linux export passes, and exported runtime loads all three levels",
+    "no skeleton, rig, external animation/model, audio, or new gameplay mechanic is introduced"
+  ],
+  "validation": {
+    "type": "repo_script",
+    "path": "tests/run_tbr03_acceptance.sh",
+    "args": ["/tmp/tbr03-game-foundry-validation"],
+    "timeout_seconds": 900,
+    "success_markers": ["TBR03_ACCEPTANCE_OK"]
+  },
+  "retry_policy": {"max_attempts": 2},
+  "on_failure": "escalate"
+}
