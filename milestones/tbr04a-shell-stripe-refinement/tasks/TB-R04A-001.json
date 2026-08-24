@@ -1,0 +1,27 @@
+{
+  "id": "TB-R04A-001",
+  "title": "Reorient the Costume as a Front Shell Band",
+  "objective": "Replace the accepted TB-R04 top-to-bottom shirt stripe stack with bold front-to-rear bands on the thorax/front shell so the costume reads as striped carapace while the rear abdomen remains dark.",
+  "depends_on": [],
+  "allowed_scope": ["scenes/player.tscn", "scripts/player.gd"],
+  "acceptance": [
+    "at least three broad named stripe meshes are distributed along local body Z with center span at least 0.26, Y span no more than 0.14, and Z span at least 1.8 times Y span",
+    "the stripe treatment begins behind the head, is centered on the thorax/front body segment, and ends before the dark rear abdomen",
+    "the mesh-bearing Shirt compatibility hierarchy remains but visually reads as a shell, skin, or carapace wrap rather than a vertically stacked humanoid garment",
+    "alternating dirty-cream and charcoal/black contrast remains bold and readable from normal gameplay and side/three-quarter camera distances",
+    "the rear Abdomen remains predominantly dark and visibly separate from the striped front segment",
+    "TB-R04 integrated emissive mask eyes, face readability, six articulated legs, two antennae, squat beetle silhouette, and primitive-only construction are preserved",
+    "TB-R01 movement, TB-R03 locomotion, TB-R03A grounded gait, collision, camera, interaction, gameplay loop, and all three levels remain unchanged",
+    "TB-001 through TB-R04 regressions, side/three-quarter and normal rendered evidence, Linux export, and all exported levels pass",
+    "the change stays within scenes/player.tscn and scripts/player.gd and adds no external asset, animation infrastructure, audio, or gameplay system"
+  ],
+  "validation": {
+    "type": "repo_script",
+    "path": "tests/run_tbr04a_acceptance.sh",
+    "args": ["/tmp/tbr04a-game-foundry-validation"],
+    "timeout_seconds": 900,
+    "success_markers": ["TBR04A_ACCEPTANCE_OK"]
+  },
+  "retry_policy": {"max_attempts": 2},
+  "on_failure": "escalate"
+}
