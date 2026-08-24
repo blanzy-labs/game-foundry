@@ -1,0 +1,27 @@
+{
+  "id": "TB-R04C-001",
+  "title": "Remove the Back Bar and Embed the Mask Eyes",
+  "objective": "Delete the accidental ShellSeam bar and refine the two glowing eye blocks into thin mask-integrated slits while preserving the accepted striped exoskeleton, beetle anatomy, locomotion, and gameplay.",
+  "depends_on": [],
+  "allowed_scope": ["scenes/player.tscn", "scripts/player.gd"],
+  "acceptance": [
+    "Body/ShellSeam and its obsolete mesh resource are removed with no renamed back bar, handle, or floating ridge replacement",
+    "EyeLeft and EyeRight remain separated emissive BoxMesh descendants of Mask with width 0.06–0.13, height at most 0.045, and depth at most 0.014",
+    "each eye slit intersects the mask front plane and projects no more than the shallow trusted tolerance, reading as an embedded opening rather than a pasted-on cube",
+    "the dark mask/head and amber slit eyes clearly communicate the face and forward direction without realistic, cartoon, or robotic extra anatomy",
+    "TB-R04B no-Shirt topology, Z-driven striped Thorax ShaderMaterial, stripe contrast/count, and separately dark rear Abdomen remain unchanged in concept and visually readable",
+    "six articulated Upper/Lower legs, two antennae, squat dung-beetle identity, grounded gait, and Body/Thorax/Abdomen articulation remain intact",
+    "movement, collision, camera, interaction, collection, HUD, exit progression, completion, restart, and all levels remain unchanged",
+    "TB-001 through TB-R04B regressions with TB-H01 stabilization, front/rear/gameplay renders, Linux export, and all exported levels pass",
+    "only scenes/player.tscn and, if strictly necessary, scripts/player.gd change; no level, locomotion, gameplay, external asset, or unrelated refinement is included"
+  ],
+  "validation": {
+    "type": "repo_script",
+    "path": "tests/run_tbr04c_acceptance.sh",
+    "args": ["/tmp/tbr04c-game-foundry-validation"],
+    "timeout_seconds": 900,
+    "success_markers": ["TBR04C_ACCEPTANCE_OK"]
+  },
+  "retry_policy": {"max_attempts": 2},
+  "on_failure": "escalate"
+}
