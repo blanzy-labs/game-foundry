@@ -1,0 +1,35 @@
+{
+  "id": "TB-R06-001",
+  "title": "Implement Stateful Doors, Collection Triggers, and Restroom 004",
+  "objective": "Add validated optional door/trigger level data, reusable animated blocking doors, one-shot collection-count runtime triggers, and a soft-lock-resistant three-area restroom_004 demonstration without changing prior gameplay or the accepted player.",
+  "depends_on": [],
+  "allowed_scope": [
+    "scripts/level_loader.gd",
+    "scripts/restroom.gd",
+    "scripts/door.gd",
+    "scenes/door.tscn",
+    "levels/restroom_004.json"
+  ],
+  "acceptance": [
+    "doors and triggers are optional but always normalized arrays, preserving restroom_001 through restroom_003",
+    "door and trigger validation rejects duplicate IDs, unknown door references, out-of-range thresholds, non-positive size/duration, and unsupported types/actions with field-specific errors",
+    "the reusable Door exposes stable Visual and StaticBody3D/CollisionShape3D children, CLOSED/OPENING/OPEN state, configure(), and idempotent open() returning true once",
+    "door root tweens by open_offset over positive open_duration so visible mesh and blocking collision travel together and open_count remains one",
+    "RestroomRuntime owns doors_by_id, trigger_fired, and trigger_fire_count and evaluates one-shot collect_count/open_door triggers only after successful collection",
+    "empty toilets and duplicate collections do not advance objective or triggers, while final exit unlock/completion behavior remains intact",
+    "restroom_004 contains 6–8 collectible and 2–3 empty toilets, two ordered non-bypassable gates, and three meaningful areas; Door A opens at 2 and Door B at 4 or 5",
+    "the level provides enough reachable collectibles before each closed gate, at least one beyond Door B, no required-collectible soft lock, and a usable final exit",
+    "TB-001 through TB-R04C regressions with TB-H01 stabilization pass; TB-R05 is reported not present rather than fabricated",
+    "door closed/open, middle-area, gameplay renders, Godot validation, Linux export, and exported runtime loading of restroom_001 through restroom_004 pass",
+    "player scene, player movement, collision behavior, prior levels, tests, pickup feedback, audio, and unrelated systems do not change"
+  ],
+  "validation": {
+    "type": "repo_script",
+    "path": "tests/run_tbr06_acceptance.sh",
+    "args": ["/tmp/tbr06-game-foundry-validation"],
+    "timeout_seconds": 1200,
+    "success_markers": ["TBR06_ACCEPTANCE_OK"]
+  },
+  "retry_policy": {"max_attempts": 2},
+  "on_failure": "escalate"
+}
