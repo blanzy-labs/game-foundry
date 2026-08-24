@@ -1,0 +1,26 @@
+{
+  "id": "TB-R02-001",
+  "title": "Replace Placeholder with Low-Poly Dung Beetle",
+  "objective": "Replace the humanoid placeholder with a distinctive low-poly dung beetle burglar built entirely from Godot-native primitive meshes while preserving TB-R01 movement, camera, interaction, collision reliability, and all existing gameplay.",
+  "depends_on": [],
+  "allowed_scope": ["scenes/player.tscn", "scripts/player.gd"],
+  "acceptance": [
+    "the Body visual root contains a separate abdomen, thorax, head, visible burglar mask, three left legs, three right legs, and two antennae",
+    "the character is constructed only from deterministic repository-native low-poly primitive meshes with no external model or animation dependency",
+    "head, mask, antennae, and anatomy establish -Z as the obvious visual front matching the TB-R01 controller",
+    "the entire beetle rotates together through the stable Body visual root",
+    "visual height is approximately 0.9–1.3 world units and the collision remains one practical capsule compatible with current corridors",
+    "camera framing remains practical for the shorter beetle and existing mouse/camera behavior is preserved",
+    "TB-001, TB-002, TB-003, and TB-R01 regressions pass, two rendered screenshots are produced, and the Linux exported runtime loads every level",
+    "no gameplay mechanic, animation, audio, external asset, level-data change, or unrelated feature is introduced"
+  ],
+  "validation": {
+    "type": "repo_script",
+    "path": "tests/run_tbr02_acceptance.sh",
+    "args": ["/tmp/tbr02-game-foundry-validation"],
+    "timeout_seconds": 900,
+    "success_markers": ["TBR02_ACCEPTANCE_OK"]
+  },
+  "retry_policy": {"max_attempts": 2},
+  "on_failure": "escalate"
+}
