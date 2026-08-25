@@ -67,10 +67,11 @@ make_case before-agent; init_case; run_crash CLAIMED
 controlled_recover >"$CASE_ARTIFACT/recovery-result.json" 2>"$CASE_ARTIFACT/recovery.stderr.log"; rc=$?
 if [[ $CRASH_CODE -eq 137 && $rc -eq 0 ]] && jq -e '.recovery_action=="RESTART_TASK" and .result=="pass" and .codex_calls==1 and .counters.agent_restarts==1' "$CASE_ARTIFACT/recovery-result.json" >/dev/null; then pass_case A_before_agent_recovery; else fail_case A_before_agent_recovery; fi
 
-# B — partial agent work is discarded and the same logical task restarts once.
+# B — a crash after agent-start proof escalates without a duplicate Codex call.
 make_case during-agent; init_case; run_crash AGENT_STARTED
 controlled_recover >"$CASE_ARTIFACT/recovery-result.json" 2>"$CASE_ARTIFACT/recovery.stderr.log"; rc=$?
-if [[ $rc -eq 0 ]] && jq -e '.recovery_action=="RESTART_TASK" and .codex_calls==1 and .counters.agent_restarts==1 and .state.task=="pass"' "$CASE_ARTIFACT/recovery-result.json" >/dev/null; then pass_case B_during_agent_restart; else fail_case B_during_agent_restart; fi
+if [[ $rc -ne 0 ]] && jq -e '.recovery_action=="ESCALATE" and .result=="escalated" and .codex_calls==0' "$CASE_ARTIFACT/recovery-result.json" >/dev/null &&
+   jq -e '.tasks["GF-RECOVERY-001"].status=="escalated" and .tasks["GF-RECOVERY-001"].attempts==1' "$CASE_STATE/GF-RECOVERY-M001/state.json" >/dev/null; then pass_case B_during_agent_restart; else fail_case B_during_agent_restart; fi
 
 # C — candidate snapshot resumes deterministic work without Codex.
 make_case candidate-snapshot; init_case; run_crash CANDIDATE_SNAPSHOTTED
@@ -132,13 +133,11 @@ make_case repair-budget; init_case; GF008_SEQUENCE=blocker,blocker,warning_only 
 GF008_SEQUENCE=blocker,blocker,warning_only GF008_REPAIR_DOUBLE=1 GF008_REPAIR_FAULT=repair_success controlled_recover >"$CASE_ARTIFACT/recovery-result.json" 2>"$CASE_ARTIFACT/recovery.stderr.log"; rc=$?
 if [[ $rc -eq 0 ]] && jq -e '.original_checkpoint=="REPAIR_STARTED" and .codex_calls==1 and .result=="pass"' "$CASE_ARTIFACT/recovery-result.json" >/dev/null && jq -e '.tasks["GF-RECOVERY-001"].repair_attempts==2' "$CASE_STATE/GF-RECOVERY-M001/state.json" >/dev/null; then pass_case L_repair_budget_persistence; else fail_case L_repair_budget_persistence; fi
 
-# M — repeated process loss exhausts the independent recovery restart budget.
+# M — ambiguous agent start escalates immediately and cannot spend restart budget.
 make_case restart-exhaustion; init_case; run_crash AGENT_STARTED
-for iteration in 1 2; do
-  set +e; GF008_RECOVERY_HOOKS=1 GF008_RECOVERY_CRASH=AGENT_STARTED controlled_recover >"$CASE_ARTIFACT/restart-$iteration.json" 2>"$CASE_ARTIFACT/restart-$iteration.stderr.log"; set -e; set +e
-done
 controlled_recover >"$CASE_ARTIFACT/recovery-result.json" 2>"$CASE_ARTIFACT/recovery.stderr.log"; rc=$?
-if [[ $rc -ne 0 ]] && jq -e '.result=="escalated"' "$CASE_ARTIFACT/recovery-result.json" >/dev/null && jq -e '.tasks["GF-RECOVERY-001"].status=="escalated" and .tasks["GF-RECOVERY-002"].status=="blocked"' "$CASE_STATE/GF-RECOVERY-M001/state.json" >/dev/null; then pass_case M_recovery_restart_exhaustion; else fail_case M_recovery_restart_exhaustion; fi
+if [[ $rc -ne 0 ]] && jq -e '.result=="escalated" and .codex_calls==0' "$CASE_ARTIFACT/recovery-result.json" >/dev/null &&
+   jq -e '.tasks["GF-RECOVERY-001"].status=="escalated" and .tasks["GF-RECOVERY-001"].attempts==1 and .tasks["GF-RECOVERY-002"].status=="blocked"' "$CASE_STATE/GF-RECOVERY-M001/state.json" >/dev/null; then pass_case M_recovery_restart_exhaustion; else fail_case M_recovery_restart_exhaustion; fi
 
 # N — corrupt checkpoint escalates without source movement or Codex.
 make_case corrupt-checkpoint; init_case; pre=$(git -C "$CASE_REPO" rev-parse gf/GF-RECOVERY-M001); run_crash CLAIMED
@@ -172,7 +171,7 @@ if [[ $busy_status -eq 0 && $busy_recover -eq 2 ]] && jq -e '.recovery_action=="
 # Simulated reboot identity mismatch is stale even if the recorded PID exists.
 jq '.active_execution.owner.boot_id="00000000-0000-0000-0000-000000000000"' "$CASE_STATE/GF-RECOVERY-M001/state.json" >"$CASE_STATE/GF-RECOVERY-M001/state.tmp" && mv "$CASE_STATE/GF-RECOVERY-M001/state.tmp" "$CASE_STATE/GF-RECOVERY-M001/state.json"
 case_cli recovery-status GF-RECOVERY-M001 --json >"$CASE_ARTIFACT/reboot-status.json"
-if jq -e '.owner=="stale" and .recovery_action=="RESTART_TASK"' "$CASE_ARTIFACT/reboot-status.json" >/dev/null; then pass_case simulated_boot_change; else fail_case simulated_boot_change; fi
+if jq -e '.owner=="stale" and .recovery_action=="ESCALATE" and (.reason|contains("exactly-once"))' "$CASE_ARTIFACT/reboot-status.json" >/dev/null; then pass_case simulated_boot_change; else fail_case simulated_boot_change; fi
 
 # T — a fresh bounded process executes only the newly READY second task.
 CASE_ARTIFACT=$real_case_dir; CASE_REPO="$temp_root/repos/real-deterministic"; CASE_PACKAGE="$temp_root/packages/real-deterministic"; CASE_STATE="$temp_root/states/real-deterministic"; CASE_WORK="$temp_root/work/real-deterministic"

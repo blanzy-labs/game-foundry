@@ -98,9 +98,23 @@ else
 fi
 
 if command -v openclaw >/dev/null 2>&1 && timeout 20 openclaw health >/dev/null 2>&1; then
-  add_check openclaw_health critical "OpenClaw gateway health" PASS "healthy" ""
+  add_check openclaw_health optional "OpenClaw gateway (observational)" PASS "healthy" "not used by canonical Game Foundry execution"
 else
-  add_check openclaw_health critical "OpenClaw gateway health" FAIL "" "run: openclaw doctor"
+  add_check openclaw_health optional "OpenClaw gateway (observational)" WARN "unavailable" "canonical local execution remains independent"
+fi
+
+if command -v openclaw >/dev/null 2>&1 && timeout 20 openclaw agent --help 2>/dev/null | grep -Fq -- '--local'; then
+  add_check openclaw_local critical "OpenClaw explicit local mode" PASS "supported" "GF-H03 canonical mode"
+else
+  add_check openclaw_local critical "OpenClaw explicit local mode" FAIL "" "installed OpenClaw must support agent --local"
+fi
+
+if command -v openclaw >/dev/null 2>&1 &&
+   timeout 20 openclaw config get agents.list 2>/dev/null | jq -e \
+     '.[] | select(.id=="game-foundry" and .models[.model].agentRuntime.id=="codex")' >/dev/null; then
+  add_check game_foundry_agent critical "Game Foundry Codex agent policy" PASS "stable configuration" ""
+else
+  add_check game_foundry_agent critical "Game Foundry Codex agent policy" FAIL "" "stable game-foundry agent must declare agentRuntime.id=codex"
 fi
 
 codex_version=""

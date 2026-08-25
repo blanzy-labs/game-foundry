@@ -145,6 +145,7 @@ gf_transition_task() {
   actual=$requested
   case "$current:$requested" in
     ready:running|running:pass|running:fail|running:escalated|fail:ready|fail:escalated) legal=true ;;
+    running:ready) [[ $reason == safe_transport_not_started ]] && legal=true ;;
   esac
   $legal || { gf_error "TRANSITION REJECTED: $task_id ${current^^} -> ${requested^^}"; return 1; }
   if [[ $current == fail && $requested == ready && $attempts -ge ${GF_TASK_MAX_ATTEMPTS[$task_id]} ]]; then
@@ -154,6 +155,9 @@ gf_transition_task() {
   if [[ $current == running && $requested == fail ]]; then
     attempts=$((attempts + 1))
     if ((attempts >= GF_TASK_MAX_ATTEMPTS[$task_id])); then actual=escalated; fi
+  fi
+  if [[ $current == running && $requested == escalated && $reason == ambiguous_agent_execution ]]; then
+    attempts=$((attempts + 1))
   fi
   gf_atomic_state_update "$state_file" '.tasks[$task].status=$status | .tasks[$task].attempts=$attempts' \
     --arg task "$task_id" --arg status "$actual" --argjson attempts "$attempts" || return 1

@@ -12,6 +12,14 @@ gf004_changed_files() {
   git -C "$1" status --porcelain=v1 --untracked-files=all | sed -E 's/^.. //' | sed -E 's/.* -> //' | LC_ALL=C sort -u
 }
 
+gf004_observed_candidate_files() {
+  local workspace=$1 pre_commit=$2
+  {
+    gf004_changed_files "$workspace"
+    git -C "$workspace" diff --name-only "$pre_commit..HEAD" 2>/dev/null || true
+  } | sed '/^$/d' | LC_ALL=C sort -u
+}
+
 gf004_matches_scope() {
   local path=$1 pattern
   for pattern in "${GF004_SCOPE_PATTERNS[@]}"; do
@@ -152,47 +160,102 @@ gf004_real_agent() {
   local workspace=$1 prompt=$2 artifact_dir=$3 run_id=$4
   local model=${GF_EXECUTION_MODEL:-openai/gpt-5.6-sol}
   local agent_id=${GF_EXECUTION_AGENT_ID:-game-foundry}
-  local agent_workspace=${GF_EXECUTION_AGENT_WORKSPACE:-$GF_CONTROL_ROOT/tmp/gf001/agent-workspace}
-  local session_key="agent:${agent_id}:${run_id}" agents_config agent_index started_at
-  started_at=$(gf_now)
-  mkdir -p "$agent_workspace"
-  ln -sfn "$workspace" "$agent_workspace/workspace" || return 1
+  local agent_workspace=${GF_EXECUTION_AGENT_WORKSPACE:-${GFH03_AGENT_WORKSPACE:-}}
+  local sessions_file generation session_key session_state generation_dir command_pid command_exit start_ns admitted_ns end_ns reconcile_start
+  local start_proven completion_proven mutated process_active class action safe startup_seconds agent_seconds reconcile_seconds total_seconds
+  sessions_file=$(gfh03_sessions_file "$agent_id")
+  [[ -n $agent_workspace ]] || agent_workspace=$(gfh03_configured_workspace "$agent_id") || return 1
+  GFH03_FAILURE_CLASS='' GFH03_RECOVERY_ACTION='' GFH03_TRANSPORT_ATTEMPTS=0 GFH03_STARTS=0
+  mkdir -p "$agent_workspace" "$artifact_dir"
   GF004_AGENT_LINK="$agent_workspace/workspace"
-  if ! openclaw agents list --json | jq -e --arg id "$agent_id" '.[] | select(.id == $id)' >/dev/null; then
-    openclaw agents add "$agent_id" --workspace "$agent_workspace" --model "$model" --non-interactive --json \
-      >"$artifact_dir/agent-create.json" 2>"$artifact_dir/agent-create.stderr.log" || return 1
+  if [[ -L $GF004_AGENT_LINK ]]; then
+    GF004_AGENT_ORIGINAL_LINK_STATE=symlink
+    GF004_AGENT_ORIGINAL_LINK_TARGET=$(readlink "$GF004_AGENT_LINK") || return 1
+  elif [[ -e $GF004_AGENT_LINK ]]; then
+    return 1
+  else
+    GF004_AGENT_ORIGINAL_LINK_STATE=absent GF004_AGENT_ORIGINAL_LINK_TARGET=''
   fi
-  agents_config=$(openclaw config get agents.list) || return 1
-  agent_index=$(jq -r --arg id "$agent_id" 'to_entries[] | select(.value.id == $id) | .key' <<<"$agents_config")
-  [[ -n $agent_index ]] || return 1
-  GF004_AGENT_INDEX=$agent_index
-  if [[ -z ${GF004_AGENT_ORIGINAL_WORKSPACE:-} ]]; then
-    GF004_AGENT_ORIGINAL_WORKSPACE=$(jq -r --argjson index "$agent_index" '.[$index].workspace // empty' <<<"$agents_config")
-  fi
-  openclaw config set "agents.list[$agent_index].workspace" "$agent_workspace" >/dev/null || return 1
-  openclaw config set "agents.list[$agent_index].model" "$model" >/dev/null || return 1
-  openclaw config set "agents.list[$agent_index].models[\"$model\"].agentRuntime.id" codex >/dev/null || return 1
-  openclaw config get "agents.list[$agent_index]" >"$artifact_dir/runtime-policy.json" || return 1
-  jq -e --arg model "$model" '.model == $model and .models[$model].agentRuntime.id == "codex"' "$artifact_dir/runtime-policy.json" >/dev/null || return 1
-  openclaw plugins inspect codex >"$artifact_dir/codex-plugin.txt" 2>&1 || return 1
-  grep -Fq 'Status: loaded' "$artifact_dir/codex-plugin.txt" || return 1
-  openclaw models status --agent "$agent_id" --json >"$artifact_dir/model-status.json" 2>"$artifact_dir/model-status.stderr.log" || return 1
-  jq -e '.auth.runtimeAuthRoutes[] | select(.provider == "openai" and .runtime == "codex" and .status == "usable")' "$artifact_dir/model-status.json" >/dev/null || return 1
-  timeout 900 openclaw agent --agent "$agent_id" --session-key "$session_key" --model "$model" --thinking medium \
-    --message-file "$prompt" --timeout 840 --json >"$artifact_dir/openclaw.stdout.log" 2>"$artifact_dir/openclaw.stderr.log"
-  GF004_OPENCLAW_EXIT=$?
-  [[ $GF004_OPENCLAW_EXIT -eq 0 ]] || return 1
-  jq -e . "$artifact_dir/openclaw.stdout.log" >/dev/null || return 1
-  cp "$artifact_dir/openclaw.stdout.log" "$artifact_dir/openclaw-result.json"
-  openclaw audit --session "$session_key" --kind agent_run --limit 20 --json >"$artifact_dir/openclaw-audit.json" 2>"$artifact_dir/openclaw-audit.stderr.log" || printf '[]\n' >"$artifact_dir/openclaw-audit.json"
-  journalctl --user -u openclaw-gateway.service --since "$started_at" --no-pager >"$artifact_dir/openclaw-gateway.log" 2>&1 || :
-  return 0
+  ln -sfn "$workspace" "$GF004_AGENT_LINK" || return 1
+  for ((generation=1; generation<=GFH03_MAX_TRANSPORT_ATTEMPTS; generation++)); do
+    GFH03_TRANSPORT_ATTEMPTS=$generation
+    session_key="agent:${agent_id}:${run_id}-transport-$(printf '%02d' "$generation")"
+    generation_dir="$artifact_dir/transport-$(printf '%02d' "$generation")"
+    mkdir -p "$generation_dir"
+    session_state=$(gfh03_session_state "$sessions_file" "$session_key")
+    if [[ $session_state == PRESENT ]]; then
+      GFH03_FAILURE_CLASS=UNRESOLVED_AMBIGUITY GFH03_RECOVERY_ACTION=ESCALATE_NO_RERUN
+      return 1
+    elif [[ $session_state == UNAVAILABLE ]]; then
+      GFH03_FAILURE_CLASS=SAFE_NOT_STARTED GFH03_RECOVERY_ACTION=REFUSE_UNAVAILABLE_SESSION_EVIDENCE
+      return 1
+    fi
+    start_ns=$(date +%s%N); admitted_ns=$start_ns
+    setsid timeout "$GFH03_OUTER_TIMEOUT" openclaw agent --local --agent "$agent_id" --session-key "$session_key" --model "$model" --thinking medium \
+      --message-file "$prompt" --timeout "$GFH03_AGENT_TIMEOUT" --json >"$generation_dir/openclaw.stdout.log" 2>"$generation_dir/openclaw.stderr.log" &
+    command_pid=$!
+    start_proven=false
+    for ((poll=0; poll<GFH03_STARTUP_TIMEOUT*5; poll++)); do
+      # The exact session's admission is the conservative start boundary. The
+      # Codex harness tag is stronger runtime proof and is required on success.
+      session_state=$(gfh03_session_state "$sessions_file" "$session_key")
+      if [[ $session_state == PRESENT ]]; then start_proven=true; admitted_ns=$(date +%s%N); break; fi
+      kill -0 "$command_pid" 2>/dev/null || break
+      sleep 0.2
+    done
+    if [[ $start_proven == false ]] && kill -0 "$command_pid" 2>/dev/null; then
+      kill -TERM "$command_pid" 2>/dev/null || true
+    fi
+    if wait "$command_pid"; then command_exit=0; else command_exit=$?; fi
+    end_ns=$(date +%s%N); GF004_OPENCLAW_EXIT=$command_exit
+    session_state=$(gfh03_session_state "$sessions_file" "$session_key")
+    if [[ $session_state == PRESENT ]]; then start_proven=true
+    elif [[ $session_state == UNAVAILABLE ]]; then start_proven=unknown
+    fi
+    [[ $start_proven == true || $start_proven == unknown ]] && GFH03_STARTS=$((GFH03_STARTS + 1))
+    completion_proven=false
+    if [[ $command_exit -eq 0 ]] && jq -e . "$generation_dir/openclaw.stdout.log" >/dev/null 2>&1; then completion_proven=true; fi
+    if [[ $completion_proven == true ]] && ! gfh03_session_start_proven "$sessions_file" "$session_key"; then completion_proven=false; fi
+    if gfh03_workspace_mutated "$workspace" "${GF004_PRE_COMMIT:-}"; then mutated=true; else mutated=false; fi
+    if gfh03_process_group_active "$command_pid"; then process_active=true; else process_active=false; fi
+    reconcile_start=$(date +%s%N)
+    class=$(gfh03_classify "$start_proven" "$mutated" "$completion_proven" "$completion_proven" "$process_active")
+    action=$(gfh03_recovery_action "$class")
+    [[ $class == SAFE_NOT_STARTED ]] && safe=true || safe=false
+    startup_seconds=$(gf004_elapsed "$start_ns" "$admitted_ns")
+    agent_seconds=$(gf004_elapsed "$admitted_ns" "$end_ns")
+    reconcile_seconds=$(gf004_elapsed "$reconcile_start" "$(date +%s%N)")
+    total_seconds=$(gf004_elapsed "$start_ns" "$(date +%s%N)")
+    gfh03_write_transport_evidence "$generation_dir/agent-transport.json" "$run_id" "$session_key" "$generation" pass completed \
+      "$([[ $start_proven == unknown ]] && printf null || printf '%s' "$start_proven")" "$completion_proven" "$command_exit" "$class" "$mutated" "$safe" "$action" \
+      "$(jq -r '.seconds // 0' "$GF004_ARTIFACT_DIR/transport-preflight.json" 2>/dev/null || printf 0)" "$startup_seconds" "$agent_seconds" "$reconcile_seconds" "$total_seconds"
+    jq --argjson active "$process_active" '.process_active_after_cli=$active' "$generation_dir/agent-transport.json" >"$generation_dir/agent-transport.json.tmp"
+    mv "$generation_dir/agent-transport.json.tmp" "$generation_dir/agent-transport.json"
+    jq --arg state "$session_state" '.session_evidence_status=$state' "$generation_dir/agent-transport.json" >"$generation_dir/agent-transport.json.tmp"
+    mv "$generation_dir/agent-transport.json.tmp" "$generation_dir/agent-transport.json"
+    cp "$generation_dir/agent-transport.json" "$artifact_dir/agent-transport.json"
+    cp "$generation_dir/openclaw.stdout.log" "$artifact_dir/openclaw.stdout.log"
+    cp "$generation_dir/openclaw.stderr.log" "$artifact_dir/openclaw.stderr.log"
+    printf '[]\n' >"$artifact_dir/openclaw-audit.json"
+    systemctl --user status openclaw-gateway.service --no-pager >"$artifact_dir/openclaw-gateway.log" 2>&1 || true
+    if [[ $completion_proven == true ]]; then
+      cp "$generation_dir/openclaw.stdout.log" "$artifact_dir/openclaw-result.json"
+      GFH03_FAILURE_CLASS='' GFH03_RECOVERY_ACTION=CONTINUE_EXISTING_CANDIDATE
+      return 0
+    fi
+    GFH03_FAILURE_CLASS=$class GFH03_RECOVERY_ACTION=$action
+    [[ $class == SAFE_NOT_STARTED && $generation -lt GFH03_MAX_TRANSPORT_ATTEMPTS ]] || return 1
+  done
+  return 1
 }
 
 gf004_restore_agent_workspace() {
-  if [[ -n ${GF004_AGENT_LINK:-} ]]; then ln -sfn "$GF_CONTROL_ROOT/tmp/gf001/bootstrap-workspace" "$GF004_AGENT_LINK" 2>/dev/null || true; fi
-  if [[ -n ${GF004_AGENT_INDEX:-} && -n ${GF004_AGENT_ORIGINAL_WORKSPACE:-} ]]; then
-    openclaw config set "agents.list[$GF004_AGENT_INDEX].workspace" "$GF004_AGENT_ORIGINAL_WORKSPACE" >/dev/null 2>&1 || true
+  if [[ -n ${GF004_AGENT_LINK:-} ]]; then
+    if [[ ${GF004_AGENT_ORIGINAL_LINK_STATE:-} == symlink ]]; then
+      ln -sfn "$GF004_AGENT_ORIGINAL_LINK_TARGET" "$GF004_AGENT_LINK" 2>/dev/null || true
+    elif [[ ${GF004_AGENT_ORIGINAL_LINK_STATE:-} == absent && -L $GF004_AGENT_LINK ]]; then
+      rm -f -- "$GF004_AGENT_LINK" 2>/dev/null || true
+    fi
   fi
 }
 
@@ -557,7 +620,7 @@ gf004_fail_execution() {
   return 1
 }
 
-gf004_escalate_execution() {
+gf004_transport_refused() {
   local reason=$1 cleanup_start state_start next_result
   cleanup_start=$(date +%s%N)
   if [[ -d $GF004_WORKSPACE ]]; then
@@ -566,7 +629,46 @@ gf004_escalate_execution() {
   gf004_restore_agent_workspace
   GF004_T_CLEANUP=$(gf004_elapsed "$cleanup_start" "$(date +%s%N)")
   state_start=$(date +%s%N)
-  gf_transition_task "$GF004_MILESTONE" "$GF004_TASK" escalated critic_repair_exhausted || true
+  gf_transition_task "$GF004_MILESTONE" "$GF004_TASK" ready safe_transport_not_started || true
+  gf_atomic_state_update "$GF004_STATE_FILE" '.tasks[$task] += {last_run_id:$run,last_result:"transport_refused",last_evidence:$evidence,failure_reason:$reason}' \
+    --arg task "$GF004_TASK" --arg run "$GF004_RUN_ID" --arg evidence "$GF004_ARTIFACT_REL" --arg reason "$reason" || true
+  gf_atomic_state_update "$GF004_STATE_FILE" 'del(.active_execution)' || true
+  GF004_T_STATE=$(gf004_elapsed "$state_start" "$(date +%s%N)")
+  GF004_T_TOTAL=$(gf004_elapsed "$GF004_TOTAL_START" "$(date +%s%N)")
+  gf004_write_result "$GF004_ARTIFACT_DIR/result.json" transport_refused "$reason" ""
+  next_result=$(gf_next_result "$GF004_MILESTONE")
+  if $json_output; then cat "$GF004_ARTIFACT_DIR/result.json"; else printf 'EXECUTION REFUSED: %s\nNext: %s\n' "$reason" "$next_result" >&2; fi
+  return 1
+}
+
+gf004_reconcile_transport_failure() {
+  local reason="OpenClaw/Codex transport failure: ${GFH03_FAILURE_CLASS:-UNRESOLVED_AMBIGUITY}"
+  if [[ ${GFH03_FAILURE_CLASS:-} == SAFE_NOT_STARTED ]]; then
+    gf004_transport_refused "$reason"
+    return 1
+  fi
+  if [[ ${GFH03_FAILURE_CLASS:-} == CANDIDATE_PRESENT_RESULT_LOST ]]; then
+    mapfile -t GF004_CHANGED_FILES < <(gf004_observed_candidate_files "$GF004_WORKSPACE" "$GF004_PRE_COMMIT")
+    if ((${#GF004_CHANGED_FILES[@]} > 0)); then
+      GF004_CANDIDATE_ORDINAL=${GF004_CANDIDATE_ORDINAL:-1}
+      gf008_snapshot_candidate "$GF004_CANDIDATE_ORDINAL" "$GF004_STAGE_DIR" || reason="$reason; candidate snapshot failed"
+    fi
+  fi
+  gf004_escalate_execution "$reason"
+  return 1
+}
+
+gf004_escalate_execution() {
+  local reason=$1 cleanup_start state_start next_result transition_reason=critic_repair_exhausted
+  [[ $reason == OpenClaw/Codex\ transport\ failure:* ]] && transition_reason=ambiguous_agent_execution
+  cleanup_start=$(date +%s%N)
+  if [[ -d $GF004_WORKSPACE ]]; then
+    git -C "$GF004_REPO" worktree remove --force "$GF004_WORKSPACE" >>"$GF004_ARTIFACT_DIR/worktree.log" 2>&1 || true
+  fi
+  gf004_restore_agent_workspace
+  GF004_T_CLEANUP=$(gf004_elapsed "$cleanup_start" "$(date +%s%N)")
+  state_start=$(date +%s%N)
+  gf_transition_task "$GF004_MILESTONE" "$GF004_TASK" escalated "$transition_reason" || true
   gf_atomic_state_update "$GF004_STATE_FILE" '.tasks[$task] += {last_run_id:$run,last_result:"escalated",last_evidence:$evidence,failure_reason:$reason,critic_status:$critic_status,repair_attempts:$repairs}' \
     --arg task "$GF004_TASK" --arg run "$GF004_RUN_ID" --arg evidence "$GF004_ARTIFACT_REL" --arg reason "$reason" --arg critic_status "$GF004_CRITIC_STATUS" --argjson repairs "$GF004_REPAIR_ATTEMPTS_USED" || true
   gf008_checkpoint STATE_ESCALATED "${GF004_STAGE_DIR:-}" || true
@@ -620,7 +722,7 @@ gf_execute_one() {
   printf '[]\n' >"$GF004_CRITIC_HISTORY"; printf '[]\n' >"$GF004_AGENT_HISTORY"
   GF004_OPENCLAW_EXIT=-1 GF004_VALIDATION_EXIT=-1 GF004_ACCEPTED_COMMIT=''
   GF004_SNAPSHOT_REF='' GF004_SNAPSHOT_COMMIT='' GF004_SNAPSHOT_TREE='' GF004_CANDIDATE_ORDINAL=0
-  GF004_AGENT_LINK='' GF004_AGENT_INDEX='' GF004_AGENT_ORIGINAL_WORKSPACE=''
+  GF004_AGENT_LINK='' GF004_AGENT_INDEX='' GF004_AGENT_ORIGINAL_WORKSPACE='' GF004_AGENT_ORIGINAL_LINK_STATE='' GF004_AGENT_ORIGINAL_LINK_TARGET=''
   GF004_RUNTIME_STATUS=not_run GF004_RUNTIME_EVIDENCE='' GF004_SCOPE_STATUS=not_run GF004_VALIDATOR_STATUS=not_run GF004_CANDIDATE_FAILURE=''
   GF004_VALIDATOR_REL=$(jq -r '.validation.path' "$task_file") GF004_VALIDATOR_PRE='' GF004_VALIDATOR_POST=''
   GF004_CRITIC_REQUIRED=$GF_REVIEW_REQUIRED GF004_CRITIC_STATUS=disabled GF004_CRITIC_MODEL='' GF004_CRITIC_RESPONSE_ID='' GF004_CRITIC_ERROR='' GF004_CRITIC_EVIDENCE_REL=''
@@ -635,6 +737,14 @@ gf_execute_one() {
 
   if ! gf004_critic_preflight; then
     if $json_output; then jq -n --arg milestone_id "$milestone_id" --arg task_id "$GF004_TASK" --arg error "$GF004_CRITIC_ERROR" '{milestone_id:$milestone_id,task_id:$task_id,result:"execution_refused",failure_reason:"CRITIC_ERROR",critic:{required:true,status:"error",error:$error,calls:0},codex_invocations:0}'; else printf 'EXECUTION REFUSED: CRITIC_ERROR: %s\n' "$GF004_CRITIC_ERROR" >&2; fi
+    return 1
+  fi
+
+  if [[ ${GF_GF004_ENABLE_TEST_HOOKS:-0} != 1 ]] && ! gfh03_preflight "$GF004_ARTIFACT_DIR" "${GF_EXECUTION_AGENT_ID:-game-foundry}" "${GF_EXECUTION_MODEL:-openai/gpt-5.6-sol}" \
+    "${GF_EXECUTION_AGENT_WORKSPACE:-$(gfh03_configured_workspace "${GF_EXECUTION_AGENT_ID:-game-foundry}" 2>/dev/null || printf '%s' "$GF_CONTROL_ROOT/tmp/gf001/agent-workspace")}"; then
+    if $json_output; then jq -n --arg milestone_id "$milestone_id" --arg task_id "$GF004_TASK" --arg evidence "$GF004_ARTIFACT_REL" \
+      '{milestone_id:$milestone_id,task_id:$task_id,result:"execution_refused",failure_reason:"OPENCLAW_PREFLIGHT_FAILED",evidence_path:$evidence,codex_invocations:0}';
+    else printf 'EXECUTION REFUSED: OPENCLAW_PREFLIGHT_FAILED\n' >&2; fi
     return 1
   fi
 
@@ -659,11 +769,12 @@ gf_execute_one() {
   cp "$prompt_generated" "$stage/prompt.md" || { gf004_fail_execution 'run prompt preservation failed'; return 1; }
   GF004_T_PROMPT=$(gf004_elapsed "$prompt_start" "$(date +%s%N)")
   if [[ ${GF_GF004_ENABLE_TEST_HOOKS:-0} == 1 ]]; then test_fault=${GF_GF004_FAULT:-simulate_success}; fi
-  agent_start=$(date +%s%N); GF004_CODEX_INVOCATIONS=1
-  gf008_checkpoint AGENT_STARTED "$stage" || { gf004_fail_execution 'agent start checkpoint failed'; return 1; }
-  if [[ -n $test_fault ]]; then gf004_test_agent "$GF004_WORKSPACE" "$stage" "$test_fault"; agent_ok=$?; else gf004_real_agent "$GF004_WORKSPACE" "$stage/prompt.md" "$stage" "$GF004_RUN_ID-initial"; agent_ok=$?; fi
+  agent_start=$(date +%s%N); GF004_CODEX_INVOCATIONS=0
+  gf008_checkpoint AGENT_DISPATCHING "$stage" || { gf004_fail_execution 'agent dispatch checkpoint failed'; return 1; }
+  if [[ -n $test_fault ]]; then GF004_CODEX_INVOCATIONS=1; gf008_checkpoint AGENT_STARTED "$stage" || return 1; gf004_test_agent "$GF004_WORKSPACE" "$stage" "$test_fault"; agent_ok=$?; else gf004_real_agent "$GF004_WORKSPACE" "$stage/prompt.md" "$stage" "$GF004_RUN_ID-initial"; agent_ok=$?; GF004_CODEX_INVOCATIONS=${GFH03_STARTS:-0}; fi
   agent_duration=$(gf004_elapsed "$agent_start" "$(date +%s%N)"); GF004_T_AGENT=$agent_duration
-  [[ $agent_ok -eq 0 ]] || { GF004_RUNTIME_STATUS=fail; gf004_append_agent_history initial 1 "$stage" "$agent_duration" fail; gf004_fail_execution "OpenClaw/Codex execution failed (exit $GF004_OPENCLAW_EXIT)"; return 1; }
+  [[ $agent_ok -eq 0 ]] || { GF004_RUNTIME_STATUS=fail; gf004_append_agent_history initial 1 "$stage" "$agent_duration" fail; if [[ -z $test_fault ]]; then gf004_reconcile_transport_failure; else gf004_fail_execution "OpenClaw/Codex execution failed (exit $GF004_OPENCLAW_EXIT)"; fi; return 1; }
+  gf008_checkpoint AGENT_STARTED "$stage" || { gf004_fail_execution 'agent start proof checkpoint failed'; return 1; }
   if [[ $test_fault == missing_runtime ]]; then runtime_ok=false; elif [[ -n $test_fault ]]; then runtime_ok=true; elif gf004_runtime_is_proven "$stage"; then runtime_ok=true; else runtime_ok=false; fi
   $runtime_ok || { GF004_RUNTIME_STATUS=fail; gf004_append_agent_history initial 1 "$stage" "$agent_duration" fail; gf004_fail_execution 'Codex runtime ownership was not proven'; return 1; }
   GF004_RUNTIME_STATUS=pass; GF004_RUNTIME_EVIDENCE='OpenClaw result/audit or Gateway evidence recorded Codex runtime ownership'

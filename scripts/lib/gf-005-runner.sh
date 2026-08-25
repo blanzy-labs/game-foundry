@@ -191,7 +191,8 @@ gf_run_bounded() {
     jq --slurpfile child "$child_json" '. + [$child[0]]' "$GF005_TASK_RESULTS" >"$temporary" && mv "$temporary" "$GF005_TASK_RESULTS"
     attempted=$(jq 'length' "$GF005_TASK_RESULTS")
     if [[ $result != pass || $child_code -ne 0 ]]; then
-      if jq -e --arg task "$selected" '.tasks[$task].status == "escalated"' "$GF005_STATE_FILE" >/dev/null; then stop_reason=ESCALATED; else stop_reason=TASK_FAILED; fi
+      if [[ $result == transport_refused || $result == execution_refused ]]; then stop_reason=TRANSPORT_REFUSED
+      elif jq -e --arg task "$selected" '.tasks[$task].status == "escalated"' "$GF005_STATE_FILE" >/dev/null; then stop_reason=ESCALATED; else stop_reason=TASK_FAILED; fi
       gf005_finalize "$stop_reason" 1; return $?
     fi
     gf005_inject_after_pass "$fault" "$GF005_STATE_FILE" "$attempted" || { gf005_finalize INTERNAL_ERROR 1; return $?; }

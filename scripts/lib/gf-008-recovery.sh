@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-GF008_CHECKPOINTS='CLAIMED WORKTREE_READY AGENT_STARTED AGENT_COMPLETED CANDIDATE_SNAPSHOTTED DETERMINISTIC_PASSED CRITIC_STARTED CRITIC_PASSED CRITIC_BLOCKED REPAIR_STARTED REPAIR_AGENT_COMPLETED REPAIR_SNAPSHOTTED REPAIR_DETERMINISTIC_PASSED REPAIR_CRITIC_PASSED REPAIR_CRITIC_BLOCKED ACCEPTED_COMMIT_CREATED CLEANUP_COMPLETED STATE_PASSED STATE_FAILED STATE_ESCALATED'
+GF008_CHECKPOINTS='CLAIMED WORKTREE_READY AGENT_DISPATCHING AGENT_STARTED AGENT_COMPLETED CANDIDATE_SNAPSHOTTED DETERMINISTIC_PASSED CRITIC_STARTED CRITIC_PASSED CRITIC_BLOCKED REPAIR_STARTED REPAIR_AGENT_COMPLETED REPAIR_SNAPSHOTTED REPAIR_DETERMINISTIC_PASSED REPAIR_CRITIC_PASSED REPAIR_CRITIC_BLOCKED ACCEPTED_COMMIT_CREATED CLEANUP_COMPLETED STATE_PASSED STATE_FAILED STATE_ESCALATED'
 
 gf008_boot_id() { cat /proc/sys/kernel/random/boot_id; }
 gf008_process_start_ticks() { awk '{print $22}' "/proc/${1:-$$}/stat" 2>/dev/null; }
@@ -163,8 +163,14 @@ gf008_classify() {
       gf008_verify_snapshot "$GF008_REPO" "$checkpoint_file" || { GF008_ACTION=ESCALATE; GF008_REASON='required candidate snapshot is missing or invalid'; return 0; } ;;
   esac
   case "$checkpoint" in
-    CLAIMED|WORKTREE_READY|AGENT_STARTED) action=RESTART_TASK ;;
-    AGENT_COMPLETED) action=RESTART_TASK ;;
+    CLAIMED|WORKTREE_READY) action=RESTART_TASK ;;
+    AGENT_DISPATCHING)
+      if [[ -f $artifact/attempt-01/agent-transport.json ]] && jq -e '.failure_class=="SAFE_NOT_STARTED" and .workspace_mutated==false and .agent_start_proven==false' "$artifact/attempt-01/agent-transport.json" >/dev/null; then
+        action=RESTART_TASK
+      else
+        action=ESCALATE; GF008_REASON='dispatch outcome is ambiguous; exactly-once policy forbids blind restart'
+      fi ;;
+    AGENT_STARTED|AGENT_COMPLETED) action=ESCALATE; GF008_REASON='agent may have started; exactly-once policy forbids blind restart' ;;
     CANDIDATE_SNAPSHOTTED) action=RESUME_DETERMINISTIC ;;
     DETERMINISTIC_PASSED|CRITIC_STARTED) action=RESUME_CRITIC ;;
     CRITIC_PASSED|REPAIR_CRITIC_PASSED) action=RECONCILE_COMMIT ;;
@@ -226,7 +232,7 @@ gf008_load_execution_context() {
   GF004_ACCEPTED_COMMIT=$(jq -r '.accepted_commit // ""' "$checkpoint")
   GF004_ATTEMPT=$(( $(jq -r --arg task "$GF004_TASK" '.tasks[$task].attempts' "$GF004_STATE_FILE") + 1 )); GF004_MAX_ATTEMPTS=${GF_TASK_MAX_ATTEMPTS[$GF004_TASK]}
   GF004_VALIDATOR_REL=$(jq -r '.validation.path' "$task_file"); GF004_VALIDATOR_PRE=''; GF004_VALIDATOR_POST=''; GF004_VALIDATION_EXIT=-1
-  GF004_OPENCLAW_EXIT=-1 GF004_AGENT_LINK='' GF004_AGENT_INDEX='' GF004_AGENT_ORIGINAL_WORKSPACE=''
+  GF004_OPENCLAW_EXIT=-1 GF004_AGENT_LINK='' GF004_AGENT_INDEX='' GF004_AGENT_ORIGINAL_WORKSPACE='' GF004_AGENT_ORIGINAL_LINK_STATE='' GF004_AGENT_ORIGINAL_LINK_TARGET=''
   GF004_RUNTIME_STATUS=not_run GF004_RUNTIME_EVIDENCE='' GF004_SCOPE_STATUS=not_run GF004_VALIDATOR_STATUS=not_run GF004_CANDIDATE_FAILURE=''
   GF004_CRITIC_REQUIRED=$GF_REVIEW_REQUIRED GF004_CRITIC_STATUS=$([[ $GF_REVIEW_REQUIRED == true ]] && printf not_run || printf disabled)
   GF004_CRITIC_MODEL='' GF004_CRITIC_RESPONSE_ID='' GF004_CRITIC_ERROR='' GF004_CRITIC_EVIDENCE_REL=''
@@ -277,12 +283,13 @@ gf008_commit_matches() {
 }
 
 gf008_escalate_recovery() {
-  local milestone_id=$1 reason=$2 state_file task run artifact result_file
+  local milestone_id=$1 reason=$2 state_file task run artifact result_file transition_reason=recovery_evidence_ambiguous
   state_file="$(gf_state_dir "$milestone_id")/state.json"; task=${GF008_TASK:-$(jq -r '.active_execution.task_id // ""' "$state_file")}; run=${GF008_RUN:-$(jq -r '.active_execution.run_id // ""' "$state_file")}
   artifact=${GF008_ARTIFACT:-$(jq -r '.active_execution.artifact_path // empty' "$state_file")}; [[ -n $artifact ]] || artifact="$GF_EXECUTION_ARTIFACT_ROOT/$milestone_id/recovery-unknown"
   mkdir -p "$artifact"; result_file="$artifact/recovery-result.json"
   if [[ -n $task ]]; then
-    gf_transition_task "$milestone_id" "$task" escalated recovery_evidence_ambiguous || true
+    [[ $reason == *'agent may have started'* || $reason == *'dispatch outcome is ambiguous'* ]] && transition_reason=ambiguous_agent_execution
+    gf_transition_task "$milestone_id" "$task" escalated "$transition_reason" || true
     gf_atomic_state_update "$state_file" '.tasks[$task].recovery_execution=.active_execution | .tasks[$task].last_result="escalated" | .tasks[$task].failure_reason=$reason | del(.active_execution)' --arg task "$task" --arg reason "$reason" || true
   fi
   jq -n --arg milestone_id "$milestone_id" --arg task "$task" --arg run "$run" --arg checkpoint "${GF008_CHECKPOINT:-}" --arg action ESCALATE --arg reason "$reason" \
@@ -413,12 +420,13 @@ gf008_recover() {
       GF_RENDER_ALLOW_RUNNING=true GF_PROMPT_WORKTREE=workspace prompt_generated=$(render_prompt "$milestone_id" "$GF004_TASK") || { gf008_fail_recovery 'authoritative prompt rendering failed'; return 1; }
       cp "$prompt_generated" "$stage/prompt.md"
       GF004_REPAIR_ATTEMPTS_USED=0 GF004_CANDIDATE_ORDINAL=1
-      gf008_checkpoint AGENT_STARTED "$stage" || return 1
+      gf008_checkpoint AGENT_DISPATCHING "$stage" || return 1
       test_fault=''; [[ ${GF_GF004_ENABLE_TEST_HOOKS:-0} == 1 ]] && test_fault=${GF_GF004_FAULT:-simulate_success}
       agent_start=$(date +%s%N); GF008_RECOVERY_CODEX_CALLS=1; GF004_CODEX_INVOCATIONS=$((GF004_CODEX_INVOCATIONS + 1))
       if [[ -n $test_fault ]]; then gf004_test_agent "$GF004_WORKSPACE" "$stage" "$test_fault"; agent_ok=$?; else gf004_real_agent "$GF004_WORKSPACE" "$stage/prompt.md" "$stage" "$GF004_RUN_ID-recovery-initial"; agent_ok=$?; fi
       agent_duration=$(gf004_elapsed "$agent_start" "$(date +%s%N)")
       [[ $agent_ok -eq 0 ]] || { gf008_fail_recovery "OpenClaw/Codex recovery execution failed (exit $GF004_OPENCLAW_EXIT)"; return 1; }
+      gf008_checkpoint AGENT_STARTED "$stage" || return 1
       if [[ -n $test_fault ]]; then runtime_ok=true; elif gf004_runtime_is_proven "$stage"; then runtime_ok=true; else runtime_ok=false; fi
       $runtime_ok || { gf008_fail_recovery 'Codex runtime ownership was not proven'; return 1; }
       GF004_RUNTIME_STATUS=pass; gf004_append_agent_history initial 1 "$stage" "$agent_duration" pass || return 1

@@ -115,12 +115,19 @@ def main() -> int:
     started = time.monotonic()
     model = os.environ.get("GF_OPENAI_CRITIC_MODEL", "")
     timeout_text = os.environ.get("GF_OPENAI_CRITIC_TIMEOUT_SECONDS", "60")
+    output_tokens_text = os.environ.get("GF_OPENAI_CRITIC_MAX_OUTPUT_TOKENS", "1600")
     try:
         timeout = int(timeout_text)
         if timeout < 1 or timeout > 900:
             raise ValueError
     except ValueError:
         return fail(output_path, model, started, "configuration", "critic timeout must be an integer from 1 to 900")
+    try:
+        output_tokens = int(output_tokens_text)
+        if output_tokens < 800 or output_tokens > 8000:
+            raise ValueError
+    except ValueError:
+        return fail(output_path, model, started, "configuration", "critic max output tokens must be an integer from 800 to 8000")
     if not model:
         return fail(output_path, model, started, "configuration", "GF_OPENAI_CRITIC_MODEL is required")
     evidence = json.loads(evidence_path.read_text(encoding="utf-8"))
@@ -133,7 +140,7 @@ def main() -> int:
         "input": [{"role": "user", "content": [{"type": "input_text", "text": json.dumps(evidence, sort_keys=True)}]}],
         "text": {"format": {"type": "json_schema", "name": "game_foundry_critic", "strict": True, "schema": api_schema}},
         "tools": [],
-        "max_output_tokens": 1600,
+        "max_output_tokens": output_tokens,
     }
     write_json(output_path / "request.json", body)
     hooks = os.environ.get("GF_GF006_ENABLE_TEST_HOOKS") == "1" or os.environ.get("GF_GF007_ENABLE_TEST_HOOKS") == "1"

@@ -5,6 +5,7 @@ repo_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 GF_SCHEMA_ROOT="$repo_root/schemas"
 GF_CONTROL_ROOT="$repo_root"
 source "$repo_root/scripts/lib/milestone-common.sh"
+source "$repo_root/scripts/lib/gf-h03-transport.sh"
 source "$repo_root/scripts/lib/gf-004-execution.sh"
 source "$repo_root/scripts/lib/gf-005-runner.sh"
 source "$repo_root/scripts/lib/gf-008-recovery.sh"

@@ -1,0 +1,13 @@
+{
+  "slice": "GF-H03",
+  "status": "pass_with_warnings",
+  "commit_subject": "GF-H03: harden OpenClaw execution transport",
+  "canonical_execution_mode": "explicit_local_openclaw_codex",
+  "deterministic": {"attempted": 20, "passed": 20, "failed": 0},
+  "real_smoke": {"attempted": 3, "passed": 3, "failed": 0, "codex_starts": 3, "duplicate_starts": 0, "session_conflicts": 0, "gateway_failures": 0},
+  "critic": {"status": "pass", "blockers": 0, "warnings": 1, "evidence": "artifacts/gf-h03/critic-20260825T193135Z-4008524"},
+  "regression": {"GF-004": "pass", "GF-005": "pass", "GF-006": "pass", "GF-007": "pass", "GF-008": "pass", "GF-H02": "pass", "GF-H03": "pass"},
+  "doctor": {"status": "ready", "critical_passed": 30, "critical_failed": 0},
+  "human_approval": "pending",
+  "tb_r08_resumed": false
+}
