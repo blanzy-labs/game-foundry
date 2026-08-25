@@ -1,0 +1,37 @@
+{
+  "id": "TB-R08-001",
+  "title": "Implement Timed Turbo and Ghost Turds",
+  "objective": "Add validated normal/turbo/ghost toilet data, two explicit refreshable player effects, active-effect HUD feedback, Ghost hazard composition, and a completable restroom_006 demonstration while preserving all accepted collection, door, hazard, movement, and exit behavior.",
+  "depends_on": [],
+  "allowed_scope": [
+    "scripts/level_loader.gd",
+    "scripts/toilet.gd",
+    "scripts/player.gd",
+    "scripts/restroom.gd",
+    "scripts/hazard.gd",
+    "levels/restroom_006.json"
+  ],
+  "acceptance": [
+    "legacy toilets normalize to normal; only normal, turbo, and ghost are accepted; Turbo duration/value and Ghost duration validate strictly and malformed values fail closed",
+    "special turds retain existing construction, targeting, pickup animation, and one-shot collection but are clearly distinguishable with warm Turbo and spectral Ghost emissive materials",
+    "every special collection increments the ordinary objective exactly once, evaluates doors and final exit immediately, then activates its effect; duplicates change no objective, trigger, effect, or feedback state",
+    "BurglarPlayer owns only explicit Turbo and Ghost timers; Turbo applies the configured multiplier to effective baseline speed, Ghost exposes temporary hazard immunity, and restart starts clean",
+    "same-type collection refreshes duration without stacking magnitude; Turbo and Ghost coexist with independent timers; expiry removes HUD entries and restores exact baseline state",
+    "Ghost suppresses only the reset consequence for legitimate reset_zone entry, emits deterministic evidence, and normal reset resumes after expiry and re-entry without disabling the hazard",
+    "a normal hazard reset preserves active Turbo and its decreasing remaining duration while preserving all TB-R07 objective/door/toilet/exit state",
+    "the active-effect HUD displays HOT SHIT and GHOST TURD only while active with readable changing time and does not redesign existing HUD feedback",
+    "restroom_006 has 8-10 collectibles including at least five normal, two Turbo, and two Ghost, 2-3 empty toilets, exactly two doors/triggers, at least two hazards, three areas, optional advantages, safe routes, and no soft lock",
+    "TB-001, TB-002, TB-003, TB-H01, TB-R01, TB-R02, TB-R03, TB-R03A, TB-R04 identity, TB-R04B, TB-R04C, TB-R05, TB-R06, TB-R07, and TB-R08 pass individually",
+    "Godot validation, nine special-turd evidence screenshots, Linux x86_64 export, and exported runtime self-test of restroom_001 through restroom_006 all pass",
+    "tests, prior levels, character, baseline movement/gait/camera/collision, existing door/pickup/hazard authority, audio, assets, inventory, generic effects, and unrelated gameplay do not change"
+  ],
+  "validation": {
+    "type": "repo_script",
+    "path": "tests/run_tbr08_acceptance.sh",
+    "args": ["/tmp/tbr08-game-foundry-validation"],
+    "timeout_seconds": 2700,
+    "success_markers": ["TBR08_ACCEPTANCE_OK"]
+  },
+  "retry_policy": {"max_attempts": 2},
+  "on_failure": "escalate"
+}

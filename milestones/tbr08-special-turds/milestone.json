@@ -1,0 +1,17 @@
+{
+  "id": "TB-R08-M001",
+  "title": "Turd Burglar Timed and Special Turds",
+  "version": 1,
+  "repository": {"name": "turd-burglar", "path": "../turd-burglar"},
+  "design": "design.md",
+  "guidelines": "guidelines.md",
+  "tasks": ["tasks/TB-R08-001.json"],
+  "completion_gate": "human_review",
+  "review_policy": {
+    "type": "openai_critic",
+    "required": true,
+    "block_on": ["blocker"],
+    "repair": {"enabled": true, "max_attempts": 2}
+  },
+  "recovery_policy": {"max_agent_restarts": 2}
+}
