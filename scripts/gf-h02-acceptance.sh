@@ -26,7 +26,9 @@ make_case() {
   mkdir -p "$CASE_REPO/fixtures"
   cp -a "$repo_root/fixtures/generated-uid-project" "$CASE_REPO/fixtures/" || return 1
   git -C "$CASE_REPO" add fixtures/generated-uid-project || return 1
-  git -C "$CASE_REPO" -c user.name='GF-H02 Fixture' -c user.email='gfh02@local.invalid' commit -q -m 'test: add generated UID fixture baseline' || return 1
+  if [[ -n $(git -C "$CASE_REPO" status --short) ]]; then
+    git -C "$CASE_REPO" -c user.name='GF-H02 Fixture' -c user.email='gfh02@local.invalid' commit -q -m 'test: add generated UID fixture baseline' || return 1
+  fi
   cp -a "$fixture" "$CASE_PACKAGE"
   jq --arg path "$CASE_REPO" '.repository.path=$path' "$CASE_PACKAGE/milestone.json" >"$CASE_PACKAGE/milestone.json.tmp" && mv "$CASE_PACKAGE/milestone.json.tmp" "$CASE_PACKAGE/milestone.json"
 }
