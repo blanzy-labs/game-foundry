@@ -1,0 +1,10 @@
+{
+  "id": "GF-H02-M001",
+  "title": "Generated UID Cleanup Fixture",
+  "version": 1,
+  "repository": {"name": "generated-uid-fixture", "path": "."},
+  "design": "design.md",
+  "guidelines": "guidelines.md",
+  "tasks": ["tasks/GF-H02-001.json"],
+  "completion_gate": "human_review"
+}

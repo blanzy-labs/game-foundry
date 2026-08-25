@@ -1,0 +1,17 @@
+{
+  "id": "GF-H02-001",
+  "title": "Create generated UID fixture script",
+  "objective": "Create fixtures/generated-uid-project/src/example.gd containing the exact fixture marker.",
+  "depends_on": [],
+  "allowed_scope": ["fixtures/generated-uid-project/src/example.gd"],
+  "acceptance": ["the candidate script exists", "generated Godot UID metadata is handled narrowly"],
+  "validation": {
+    "type": "repo_script",
+    "path": "fixtures/generated-uid-project/acceptance/validate-task.sh",
+    "args": [],
+    "timeout_seconds": 60,
+    "success_markers": ["GF_H02_FIXTURE_ACCEPTED"]
+  },
+  "retry_policy": {"max_attempts": 1},
+  "on_failure": "escalate"
+}

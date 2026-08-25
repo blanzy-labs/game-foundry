@@ -20,17 +20,124 @@ gf004_matches_scope() {
   return 1
 }
 
+gf004_array_contains() {
+  local needle=$1 item
+  shift
+  for item in "$@"; do [[ $item == "$needle" ]] && return 0; done
+  return 1
+}
+
+gf004_path_fingerprint() {
+  local workspace=$1 path=$2
+  if [[ -L $workspace/$path ]]; then
+    printf 'symlink:%s' "$(readlink "$workspace/$path")" | sha256sum | cut -d' ' -f1
+  elif [[ -f $workspace/$path ]]; then
+    git -C "$workspace" hash-object -- "$path"
+  elif [[ ! -e $workspace/$path ]]; then
+    printf 'absent\n'
+  else
+    return 1
+  fi
+}
+
+gf004_is_expected_godot_uid() {
+  local workspace=$1 path=$2 companion line_count
+  [[ -n $path && $path != /* && $path != *'..'* && $path == *.gd.uid ]] || return 1
+  companion=${path%.uid}
+  [[ $companion == *.gd ]] || return 1
+  gf004_array_contains "$companion" "${GF004_CHANGED_FILES[@]}" || return 1
+  gf004_matches_scope "$companion" || return 1
+  [[ -f $workspace/$companion && ! -L $workspace/$companion && -f $workspace/$path && ! -L $workspace/$path ]] || return 1
+  git -C "$workspace" cat-file -e "$GF004_PRE_COMMIT:$path" >/dev/null 2>&1 && return 1
+  line_count=$(wc -l <"$workspace/$path")
+  [[ $line_count -eq 1 ]] || return 1
+  grep -Eq '^uid://[a-z0-9]+$' "$workspace/$path"
+}
+
 gf004_verify_scope() {
   local workspace=$1 path resolved
   GF004_SCOPE_REASON=''
+  GF004_GENERATED_METADATA=()
   ((${#GF004_CHANGED_FILES[@]} > 0)) || { GF004_SCOPE_REASON='no source mutation'; return 1; }
   for path in "${GF004_CHANGED_FILES[@]}"; do
     [[ -n $path && $path != /* && $path != *'..'* ]] || { GF004_SCOPE_REASON="unsafe changed path: $path"; return 1; }
-    gf004_matches_scope "$path" || { GF004_SCOPE_REASON="outside allowed scope: $path"; return 1; }
+    if ! gf004_matches_scope "$path"; then
+      gf004_is_expected_godot_uid "$workspace" "$path" || { GF004_SCOPE_REASON="outside allowed scope: $path"; return 1; }
+      GF004_GENERATED_METADATA+=("$path")
+    fi
     if [[ -L $workspace/$path ]]; then
       resolved=$(realpath "$workspace/$path" 2>/dev/null) || { GF004_SCOPE_REASON="broken changed symlink: $path"; return 1; }
       [[ $resolved == "$workspace/"* ]] || { GF004_SCOPE_REASON="symlink escape: $path"; return 1; }
     fi
+  done
+}
+
+gf004_reconcile_post_validation_changes() {
+  local workspace=$1 stage=$2 path fingerprint reason='' metadata_added=false
+  local -a current=() accepted_metadata=()
+  mapfile -t current < <(gf004_changed_files "$workspace")
+  GF004_CHANGED_FILES=("${current[@]}")
+
+  for path in "${GF004_VALIDATED_SOURCE_FILES[@]}"; do
+    if ! gf004_array_contains "$path" "${current[@]}"; then
+      reason="candidate change disappeared during validation: $path"
+      break
+    fi
+    fingerprint=$(gf004_path_fingerprint "$workspace" "$path") || { reason="could not fingerprint validated source: $path"; break; }
+    if [[ $fingerprint != "${GF004_VALIDATED_SOURCE_FINGERPRINTS[$path]}" ]]; then
+      reason="validated source changed during validation: $path"
+      break
+    fi
+  done
+
+  if [[ -z $reason ]]; then
+    for path in "${current[@]}"; do
+      gf004_array_contains "$path" "${GF004_VALIDATED_SOURCE_FILES[@]}" && continue
+      if gf004_is_expected_godot_uid "$workspace" "$path"; then
+        accepted_metadata+=("$path")
+        metadata_added=true
+      else
+        reason="unexpected post-validation change: $path"
+        break
+      fi
+    done
+  fi
+
+  if [[ -z $reason ]] && ! gf004_verify_scope "$workspace"; then reason=$GF004_SCOPE_REASON; fi
+  jq -n --arg status "$([[ -z $reason ]] && printf pass || printf reject)" --arg reason "$reason" \
+    --argjson validated_source "$(printf '%s\n' "${GF004_VALIDATED_SOURCE_FILES[@]}" | jq -Rsc 'split("\n")|map(select(length>0))')" \
+    --argjson final_changes "$(printf '%s\n' "${current[@]:-}" | jq -Rsc 'split("\n")|map(select(length>0))')" \
+    --argjson accepted_metadata "$(printf '%s\n' "${accepted_metadata[@]:-}" | jq -Rsc 'split("\n")|map(select(length>0))')" \
+    '{status:$status,policy:"strict_godot_gd_uid_companion",reason:(if $reason=="" then null else $reason end),validated_source:$validated_source,accepted_generated_metadata:$accepted_metadata,final_changes:$final_changes}' \
+    >"$stage/generated-metadata.json"
+  [[ -z $reason ]] || { GF004_CANDIDATE_FAILURE="post-validation worktree reconciliation failed: $reason"; return 1; }
+
+  jq --argjson changed "$(printf '%s\n' "${GF004_CHANGED_FILES[@]}" | jq -Rsc 'split("\n")|map(select(length>0))')" \
+    --argjson generated "$(printf '%s\n' "${GF004_GENERATED_METADATA[@]:-}" | jq -Rsc 'split("\n")|map(select(length>0))')" \
+    '.changed_files=$changed | .generated_metadata={policy:"strict_godot_gd_uid_companion",accepted:$generated}' "$stage/scope.json" >"$stage/scope.json.tmp" && mv "$stage/scope.json.tmp" "$stage/scope.json"
+
+  if $metadata_added; then
+    for path in "${GF004_CHANGED_FILES[@]}"; do
+      if [[ -f $workspace/$path ]] && ! git -C "$workspace" ls-files --error-unmatch -- "$path" >/dev/null 2>&1; then git -C "$workspace" add -N -- "$path"; fi
+    done
+    git -C "$workspace" diff --binary >"$stage/agent.patch"
+    gf008_snapshot_candidate "${GF004_CANDIDATE_ORDINAL:-1}" "$stage" || { GF004_CANDIDATE_FAILURE='generated metadata snapshot refresh failed'; return 1; }
+  fi
+
+  GF004_FINAL_FINGERPRINTS=()
+  for path in "${GF004_CHANGED_FILES[@]}"; do
+    GF004_FINAL_FINGERPRINTS[$path]=$(gf004_path_fingerprint "$workspace" "$path") || { GF004_CANDIDATE_FAILURE="could not fingerprint reconciled candidate: $path"; return 1; }
+  done
+}
+
+gf004_verify_reconciled_candidate_stable() {
+  local workspace=$1 path fingerprint
+  local -a current=()
+  mapfile -t current < <(gf004_changed_files "$workspace")
+  [[ $(printf '%s\n' "${current[@]:-}") == $(printf '%s\n' "${GF004_CHANGED_FILES[@]:-}") ]] || return 1
+  for path in "${GF004_CHANGED_FILES[@]}"; do
+    fingerprint=$(gf004_path_fingerprint "$workspace" "$path") || return 1
+    [[ $fingerprint == "${GF004_FINAL_FINGERPRINTS[$path]}" ]] || return 1
   done
 }
 
@@ -104,6 +211,7 @@ gf004_test_agent() {
     GF-REPAIR-002) target=fixtures/repair-project/src/marker-002.txt; marker=REQUIRED_REPAIR_MARKER_002 ;;
     GF-RECOVERY-001) target=fixtures/recovery-project/src/marker-001.txt; marker=REQUIRED_RECOVERY_MARKER ;;
     GF-RECOVERY-002) target=fixtures/recovery-project/src/marker-002.txt; marker=REQUIRED_RECOVERY_MARKER_002 ;;
+    GF-H02-001) target=fixtures/generated-uid-project/src/example.gd; marker='extends RefCounted # GF_H02_CANDIDATE' ;;
     *) return 1 ;;
   esac
   GF004_OPENCLAW_EXIT=0
@@ -139,6 +247,7 @@ gf004_test_repair_agent() {
     GF-REPAIR-002) target=fixtures/repair-project/src/marker-002.txt; marker=REQUIRED_REPAIR_MARKER_002 ;;
     GF-RECOVERY-001) target=fixtures/recovery-project/src/marker-001.txt; marker=REQUIRED_RECOVERY_MARKER ;;
     GF-RECOVERY-002) target=fixtures/recovery-project/src/marker-002.txt; marker=REQUIRED_RECOVERY_MARKER_002 ;;
+    GF-H02-001) target=fixtures/generated-uid-project/src/example.gd; marker='extends RefCounted # GF_H02_CANDIDATE' ;;
     *) return 1 ;;
   esac
   GF004_OPENCLAW_EXIT=0
@@ -238,7 +347,7 @@ gf004_render_repair_prompt() {
 }
 
 gf004_validate_candidate() {
-  local task_file=$1 validator_abs=$2 stage=$3 repair_fault=${4:-} scope_start validation_start timeout_seconds marker changed markers_ok validator_post
+  local task_file=$1 validator_abs=$2 stage=$3 repair_fault=${4:-} scope_start validation_start timeout_seconds marker changed markers_ok validator_post path fingerprint
   GF004_STAGE_DIR=$stage
   mkdir -p "$stage"
   scope_start=$(date +%s%N)
@@ -251,6 +360,16 @@ gf004_validate_candidate() {
   jq -n --arg status "$GF004_SCOPE_STATUS" --arg reason "$GF004_SCOPE_REASON" --argjson changed_files "$(printf '%s\n' "${GF004_CHANGED_FILES[@]:-}" | jq -Rsc 'split("\n")|map(select(length>0))')" --argjson allowed "$(printf '%s\n' "${GF004_SCOPE_PATTERNS[@]}" | jq -Rsc 'split("\n")|map(select(length>0))')" '{status:$status,reason:$reason,changed_files:$changed_files,allowed_scope:$allowed}' >"$stage/scope.json"
   GF004_T_SCOPE=$(gf004_sum_seconds "$GF004_T_SCOPE" "$(gf004_elapsed "$scope_start" "$(date +%s%N)")")
   if [[ $GF004_SCOPE_STATUS != pass ]]; then GF004_CANDIDATE_FAILURE="scope validation failed: $GF004_SCOPE_REASON"; return 10; fi
+
+  declare -g -a GF004_VALIDATED_SOURCE_FILES=("${GF004_CHANGED_FILES[@]}")
+  declare -g -A GF004_VALIDATED_SOURCE_FINGERPRINTS=()
+  declare -g -A GF004_FINAL_FINGERPRINTS=()
+  GF004_VALIDATED_SOURCE_FINGERPRINTS=()
+  GF004_FINAL_FINGERPRINTS=()
+  for path in "${GF004_VALIDATED_SOURCE_FILES[@]}"; do
+    fingerprint=$(gf004_path_fingerprint "$GF004_WORKSPACE" "$path") || { GF004_CANDIDATE_FAILURE="could not fingerprint candidate source: $path"; return 13; }
+    GF004_VALIDATED_SOURCE_FINGERPRINTS[$path]=$fingerprint
+  done
 
   gf008_snapshot_candidate "${GF004_CANDIDATE_ORDINAL:-1}" "$stage" || { GF004_CANDIDATE_FAILURE='candidate snapshot failed'; return 13; }
 
@@ -270,6 +389,7 @@ gf004_validate_candidate() {
   if [[ $GF004_VALIDATION_EXIT -eq 0 ]] && $markers_ok; then GF004_VALIDATOR_STATUS=pass; else GF004_VALIDATOR_STATUS=fail; fi
   GF004_T_VALIDATION=$(gf004_sum_seconds "$GF004_T_VALIDATION" "$(gf004_elapsed "$validation_start" "$(date +%s%N)")")
   if [[ $GF004_VALIDATOR_STATUS != pass ]]; then GF004_CANDIDATE_FAILURE="deterministic validation failed (exit $GF004_VALIDATION_EXIT, markers=$markers_ok)"; return 12; fi
+  gf004_reconcile_post_validation_changes "$GF004_WORKSPACE" "$stage" || return 14
   if ((GF004_REPAIR_ATTEMPTS_USED > 0)); then gf008_checkpoint REPAIR_DETERMINISTIC_PASSED "$stage"; else gf008_checkpoint DETERMINISTIC_PASSED "$stage"; fi
 }
 
@@ -594,6 +714,7 @@ gf_execute_one() {
   fi
 
   commit_start=$(date +%s%N)
+  gf004_verify_reconciled_candidate_stable "$GF004_WORKSPACE" || { gf004_fail_execution 'post-validation worktree reconciliation failed: candidate changed after reconciliation'; return 1; }
   git -C "$GF004_WORKSPACE" reset >/dev/null || { gf004_fail_execution 'could not clear intent-to-add index'; return 1; }
   git -C "$GF004_WORKSPACE" add -- "${GF004_CHANGED_FILES[@]}" || { gf004_fail_execution 'could not stage verified source files'; return 1; }
   commit_message="$GF004_TASK: $(jq -r '.title' "$task_file")"
