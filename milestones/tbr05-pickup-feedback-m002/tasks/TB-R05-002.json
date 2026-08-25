@@ -1,0 +1,32 @@
+{
+  "id": "TB-R05-002",
+  "title": "Implement Immediate Turd Pickup and Interaction Feedback",
+  "objective": "Add toilet targeting, animated pickup presentation, STEAL TURD prompting, +1/counter/exit HUD feedback, and deterministic presentation state while preserving immediate TB-R06 trigger and final-exit authority.",
+  "depends_on": [],
+  "allowed_scope": [
+    "scripts/toilet.gd",
+    "scripts/player.gd",
+    "scripts/restroom.gd"
+  ],
+  "acceptance": [
+    "TurdToilet exposes set_targeted(), targeted, pickup_feedback_active, and pickup_duration from 0.15 through 0.35 seconds; only an uncollected turd can be targeted",
+    "a successful collect sets has_turd false and emits collected exactly once synchronously, begins a visible pickup Tween, and every immediate duplicate returns false without restarting feedback",
+    "the existing player nearest-target path owns exactly one active collectible target, clears old/out-of-range targets, ignores empty/collected toilets, and preserves interaction range and movement",
+    "the active prompt is exactly E — STEAL TURD and is hidden for empty, collected, out-of-range, and completed-heist states",
+    "each successful collection immediately updates the counter, shows +1 TURD once, punches the counter once, and exposes deterministic feedback counts; rejected collection produces no HUD feedback",
+    "at restroom_004 collect_count threshold two, count and trigger fire synchronously, Door A begins opening while pickup_feedback_active remains true, and repeated collection leaves count/trigger/open/HUD counts unchanged",
+    "remaining restroom_004 thresholds fire once, final EXIT UNLOCKED feedback occurs once, final exit unlock and heist completion remain functional",
+    "restroom_001 through restroom_004, TB-001, TB-002, TB-003, TB-H01, TB-R01, TB-R02, TB-R03, TB-R03A, TB-R04 identity, TB-R04B, TB-R04C, and TB-R06 all pass",
+    "normal, targeted, pickup, HUD, final-exit, and door-threshold rendered evidence, Godot validation, Linux export, and exported execution of all four levels pass",
+    "tests, levels, schema, scenes, doors/triggers, character, movement, camera, collision, audio, assets, and unrelated gameplay do not change"
+  ],
+  "validation": {
+    "type": "repo_script",
+    "path": "tests/run_tbr05_acceptance.sh",
+    "args": ["/tmp/tbr05-game-foundry-validation"],
+    "timeout_seconds": 1800,
+    "success_markers": ["TBR05_ACCEPTANCE_OK"]
+  },
+  "retry_policy": {"max_attempts": 2},
+  "on_failure": "escalate"
+}
