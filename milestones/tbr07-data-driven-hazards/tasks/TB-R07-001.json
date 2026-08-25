@@ -1,0 +1,36 @@
+{
+  "id": "TB-R07-001",
+  "title": "Implement Reset-Zone Hazards and Restroom 005",
+  "objective": "Add validated optional reset_zone level data, reusable spatial hazards, safe in-place player recovery that preserves all heist progress, and a compact restroom_005 demonstration without changing accepted pickup, door, character, or movement behavior.",
+  "depends_on": [],
+  "allowed_scope": [
+    "scripts/level_loader.gd",
+    "scripts/restroom.gd",
+    "scripts/hazard.gd",
+    "scripts/player.gd",
+    "scenes/hazard.tscn",
+    "levels/restroom_005.json"
+  ],
+  "acceptance": [
+    "optional hazards normalize to an empty array for restroom_001 through restroom_004, while reset_zone fields normalize to typed values with a 0.75-second default cooldown",
+    "duplicate IDs, unsupported types, malformed position/size/reset_position, missing reset_position, non-positive size components, and non-positive cooldown fail closed with field-specific errors",
+    "a reusable visible hazard scene exposes Area3D/CollisionShape3D aligned to configured position and size, supports only reset_zone, registers by ID, and emits deterministic registration/trigger/reset markers",
+    "only the active player triggers a hazard; unrelated physics bodies are ignored; each legitimate entry increments activation_count exactly once, cooldown blocks storms, and later re-entry increments again",
+    "RestroomRuntime applies the configured reset_position in the current scene and clears CharacterBody3D velocity without changing normal movement, gait, camera, model, or collision behavior",
+    "a hazard reset preserves collected_turds, collected toilet state, trigger_fired and trigger_fire_count, door OPEN state and open_count, unlocked exit state, and the ability to complete the heist",
+    "no scene reload, health, lives, damage, death, checkpoints, audio, moving hazards, projectiles, or generic action scripting is introduced",
+    "restroom_005 has 7-10 collectibles, 2-4 empty toilets, exactly two doors/triggers, 2-3 meaningful avoidable hazards, 3-4 areas, safe reset positions, reachable threshold collectibles, no reset loop, and no soft lock",
+    "TB-001, TB-002, TB-003, TB-H01, TB-R01, TB-R02, TB-R03, TB-R03A, TB-R04 identity, TB-R04B, TB-R04C, TB-R05, TB-R06, and TB-R07 pass individually",
+    "Godot validation, six required hazard screenshots, Linux x86_64 export, and exported runtime loading/self-test of restroom_001 through restroom_005 all pass",
+    "tests, prior levels, existing door/trigger authority, pickup behavior, character aesthetics, movement/camera/collision, audio, assets, and unrelated gameplay do not change"
+  ],
+  "validation": {
+    "type": "repo_script",
+    "path": "tests/run_tbr07_acceptance.sh",
+    "args": ["/tmp/tbr07-game-foundry-validation"],
+    "timeout_seconds": 2400,
+    "success_markers": ["TBR07_ACCEPTANCE_OK"]
+  },
+  "retry_policy": {"max_attempts": 2},
+  "on_failure": "escalate"
+}
