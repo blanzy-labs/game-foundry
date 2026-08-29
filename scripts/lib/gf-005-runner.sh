@@ -168,6 +168,7 @@ gf_run_bounded() {
       child_fault=simulate_success
       [[ $fault == task2_validation_failure && $selected == GF-CHAIN-002 ]] && child_fault=validation_failure
       [[ $fault == task2_unauthorized_change && $selected == GF-CHAIN-002 ]] && child_fault=unauthorized_change
+      [[ $fault == task1_safe_not_started && $selected == GF-CHAIN-001 ]] && child_fault=safe_not_started
     fi
     if [[ -n $child_fault ]]; then
       GF_GF004_ENABLE_TEST_HOOKS=1 GF_GF004_FAULT="$child_fault" GF_MILESTONE_STATE_ROOT="$GF_STATE_ROOT" GF_MILESTONE_ARTIFACT_ROOT="$GF_ARTIFACT_ROOT" \

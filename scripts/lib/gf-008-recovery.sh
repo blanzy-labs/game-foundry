@@ -119,8 +119,13 @@ gf008_checkpoint_valid() {
   jq -e . "$checkpoint_file" >/dev/null 2>&1 || return 1
   jq -e --arg milestone "$GF_ID" --arg task "$(jq -r '.active_execution.task_id' "$state_file")" --arg run "$(jq -r '.active_execution.run_id' "$state_file")" \
     --arg pre "$(jq -r '.active_execution.pre_task_commit' "$state_file")" --arg branch "$(jq -r '.active_execution.execution_branch' "$state_file")" \
+    --arg checkpoint "$(jq -r '.active_execution.checkpoint' "$state_file")" --arg stage "$(jq -r '.active_execution.stage_path // ""' "$state_file")" \
+    --arg snapshot_ref "$(jq -r '.active_execution.snapshot.ref // ""' "$state_file")" --arg snapshot_commit "$(jq -r '.active_execution.snapshot.commit // ""' "$state_file")" \
+    --arg snapshot_tree "$(jq -r '.active_execution.snapshot.tree // ""' "$state_file")" --arg accepted "$(jq -r '.active_execution.accepted_commit // ""' "$state_file")" \
     '(.version==1) and .milestone_id==$milestone and .task_id==$task and .run_id==$run and .pre_task_commit==$pre and .execution_branch==$branch and
-     (.checkpoint|type=="string") and (.timestamp|type=="string")' "$checkpoint_file" >/dev/null
+     .checkpoint==$checkpoint and .stage_path==$stage and
+     (.snapshot.ref // "")==$snapshot_ref and (.snapshot.commit // "")==$snapshot_commit and (.snapshot.tree // "")==$snapshot_tree and
+     (.accepted_commit // "")==$accepted and (.timestamp|type=="string")' "$checkpoint_file" >/dev/null
 }
 
 gf008_verify_snapshot() {
@@ -263,10 +268,52 @@ gf008_load_validation_evidence() {
 }
 
 gf008_verify_critic_pass() {
-  local stage=$1
-  [[ -f $stage/critic/result.json && -f $stage/critic/review.json && -f $stage/critic/evidence.json ]] || return 1
-  jq -e '.status=="pass" and .finding_counts.blocker==0' "$stage/critic/result.json" >/dev/null || return 1
-  jq -e '.decision=="pass" and ([.findings[]|select(.severity=="blocker")]|length)==0' "$stage/critic/review.json" >/dev/null || return 1
+  local stage=$1 critic_dir result review evidence request response expected_changed response_id response_model
+  critic_dir="$stage/critic"; result="$critic_dir/result.json"; review="$critic_dir/review.json"; evidence="$critic_dir/evidence.json"
+  request="$critic_dir/request.json"; response="$critic_dir/response.json"
+  [[ -f $result && -f $review && -f $evidence && -f $request && -f $response && -f $critic_dir/read-only-proof.json ]] || return 1
+  jq -e . "$result" "$review" "$evidence" "$request" "$response" "$critic_dir/read-only-proof.json" >/dev/null 2>&1 || return 1
+  jq -e '
+    .status=="pass" and .decision=="pass" and .error_type==null and .error==null and
+    (.response_id|type=="string" and length>0) and (.model|type=="string" and length>0) and
+    (.finding_counts|type=="object") and .finding_counts.blocker==0 and
+    (.finding_counts.warning|type=="number") and (.finding_counts.observation|type=="number")
+  ' "$result" >/dev/null || return 1
+  jq -e '
+    (keys|sort)==(["decision","findings","summary"]|sort) and .decision=="pass" and (.summary|type=="string" and length>0) and
+    (.findings|type=="array") and all(.findings[];
+      (keys|sort)==(["category","evidence_refs","id","recommended_action","severity","summary"]|sort) and
+      (.id|type=="string" and test("^GFCRIT-[A-F0-9]{10}$")) and
+      (.severity=="warning" or .severity=="observation") and
+      (.category|IN("requirements","design","guidelines","scope","evidence","quality","integrity")) and
+      (.summary|type=="string" and length>0) and (.evidence_refs|type=="array" and length>0) and (.recommended_action|type=="string"))
+  ' "$review" >/dev/null || return 1
+  expected_changed=$(printf '%s\n' "${GF004_CHANGED_FILES[@]}" | jq -Rsc 'split("\n")|map(select(length>0))|sort')
+  jq -e --arg milestone "$GF004_MILESTONE" --arg task "$GF004_TASK" --arg run "$GF004_RUN_ID" --arg pre "$GF004_PRE_COMMIT" \
+    --arg design "$(gf_sha256 "$GF_DESIGN")" --argjson changed "$expected_changed" '
+    .milestone_id==$milestone and .task_id==$task and .run_id==$run and .pre_task_accepted_commit==$pre and
+    .evidence.DESIGN.sha256==$design and .evidence.TASK.id==$task and
+    (.evidence.CHANGED_FILES.paths|sort)==$changed and .evidence.SCOPE_RESULT.result.status=="pass" and
+    .evidence.VALIDATOR.integrity=="pass" and .evidence.VALIDATION_RESULT.exit_code==0
+  ' "$evidence" >/dev/null || return 1
+  cmp -s <(jq -rj '.evidence.PATCH.text' "$evidence") <(git -C "$GF004_REPO" diff --binary "$GF004_PRE_COMMIT" "$GF004_SNAPSHOT_COMMIT") || return 1
+  jq -e --slurpfile supplied "$evidence" '.input[0].content[0].text|fromjson == $supplied[0]' "$request" >/dev/null || return 1
+  response_id=$(jq -r '.response_id' "$result"); response_model=$(jq -r '.model' "$result")
+  jq -e --arg id "$response_id" --arg model "$response_model" '
+    def critic_text:
+      if (.output_text|type)=="string" and (.output_text|length)>0 then .output_text
+      else [.output[]?.content[]? | select(.type=="output_text") | (.text // "")] | join("")
+      end;
+    .status=="completed" and .id==$id and .model==$model and (critic_text|type=="string" and length>0)
+  ' "$response" >/dev/null || return 1
+  jq -e --slurpfile persisted "$review" '
+    def critic_text:
+      if (.output_text|type)=="string" and (.output_text|length)>0 then .output_text
+      else [.output[]?.content[]? | select(.type=="output_text") | (.text // "")] | join("")
+      end;
+    (critic_text|fromjson) as $raw | $raw.decision=="pass" and
+    ($raw.findings|map(del(.id)))==($persisted[0].findings|map(del(.id))) and $raw.summary==$persisted[0].summary' "$response" >/dev/null || return 1
+  jq -e '.source_status_unchanged and .candidate_patch_unchanged and .execution_branch_unchanged and .milestone_state_unchanged' "$critic_dir/read-only-proof.json" >/dev/null || return 1
 }
 
 gf008_commit_matches() {
@@ -388,7 +435,12 @@ gf008_recover() {
   gf008_journal recovery_started "$(jq -cn --arg action "$action" --arg checkpoint "$original" '{action:$action,checkpoint:$checkpoint}')"
 
   if [[ $action == COMPLETE_STATE_PASS ]]; then
-    GF004_CRITIC_STATUS=pass
+    if [[ $GF004_CRITIC_REQUIRED == true ]]; then
+      gf008_verify_critic_pass "$GF004_STAGE_DIR" || { gf008_escalate_recovery "$milestone_id" 'critic PASS evidence is incomplete'; return 1; }
+      GF004_CRITIC_STATUS=pass
+    else
+      GF004_CRITIC_STATUS=disabled
+    fi
     gf008_finish_pass "$original" "$action" false "$task_file"; return $?
   fi
 
@@ -397,7 +449,12 @@ gf008_recover() {
     GF004_ACCEPTED_COMMIT=$(jq -r '.accepted_commit' "$GF004_ARTIFACT_DIR/commit.json")
     gf008_commit_matches "$GF004_ACCEPTED_COMMIT" "$task_file" || { gf008_escalate_recovery "$milestone_id" 'accepted commit evidence contradicts branch'; return 1; }
     gf_atomic_state_update "$GF004_STATE_FILE" '.active_execution.counters.commit_reconciliations += 1' || return 1
-    GF004_CRITIC_STATUS=pass
+    if [[ $GF004_CRITIC_REQUIRED == true ]]; then
+      gf008_verify_critic_pass "$GF004_STAGE_DIR" || { gf008_escalate_recovery "$milestone_id" 'critic PASS evidence is incomplete'; return 1; }
+      GF004_CRITIC_STATUS=pass
+    else
+      GF004_CRITIC_STATUS=disabled
+    fi
     gf008_journal accepted_commit_reconciled "$(jq -cn --arg sha "$GF004_ACCEPTED_COMMIT" '{sha:$sha}')"
     gf008_finish_pass "$original" "$action" false "$task_file"; return $?
   fi
@@ -463,10 +520,17 @@ gf008_recover() {
   esac
 
   if [[ $action == RECONCILE_COMMIT ]]; then
-    gf008_verify_critic_pass "$stage" || { gf008_escalate_recovery "$milestone_id" 'critic PASS evidence is incomplete'; return 1; }
-    GF004_CRITIC_STATUS=pass
+    if [[ $GF004_CRITIC_REQUIRED == true ]]; then
+      gf008_verify_critic_pass "$stage" || { gf008_escalate_recovery "$milestone_id" 'critic PASS evidence is incomplete'; return 1; }
+      GF004_CRITIC_STATUS=pass
+    else
+      GF004_CRITIC_STATUS=disabled
+    fi
   elif [[ $action == RESUME_REPAIR || $action == RESUME_REPAIR_CRITIC ]]; then
     :
+  elif [[ $GF004_CRITIC_REQUIRED != true ]]; then
+    GF004_CRITIC_STATUS=disabled
+    action=RECONCILE_COMMIT
   else
     if [[ $original == CRITIC_STARTED ]]; then
       [[ -d $stage/critic ]] && mv "$stage/critic" "$stage/critic-interrupted-$(date -u +%Y%m%dT%H%M%SZ)"

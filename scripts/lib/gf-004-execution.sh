@@ -284,6 +284,16 @@ gf004_test_agent() {
   : >"$artifact_dir/openclaw.stderr.log"
   : >"$artifact_dir/openclaw-gateway.log"
   case "$fault" in
+    safe_not_started)
+      GF004_OPENCLAW_EXIT=75
+      GFH03_FAILURE_CLASS=SAFE_NOT_STARTED
+      GFH03_RECOVERY_ACTION=REFUSE_UNAVAILABLE_SESSION_EVIDENCE
+      mkdir -p "$artifact_dir/transport-02"
+      jq -n '{transport_generation:2,failure_class:"SAFE_NOT_STARTED",recovery_action:"REFUSE_UNAVAILABLE_SESSION_EVIDENCE",agent_start_proven:false,workspace_mutated:false,feature_attempts:0,test_hook:true}' >"$artifact_dir/transport-02/agent-transport.json"
+      cp "$artifact_dir/transport-02/agent-transport.json" "$artifact_dir/agent-transport.json"
+      printf '{"test_hook":true,"status":"transport_refused"}\n' >"$artifact_dir/openclaw-result.json"
+      return 1
+      ;;
     openclaw_failure)
       GF004_OPENCLAW_EXIT=71
       printf '{"test_hook":true,"status":"failed"}\n' >"$artifact_dir/openclaw-result.json"
@@ -365,7 +375,7 @@ gf004_critic_preflight() {
   [[ -n ${GF_OPENAI_CRITIC_MODEL:-} ]] || { GF004_CRITIC_ERROR='GF_OPENAI_CRITIC_MODEL is required'; return 1; }
   [[ ${GF_OPENAI_CRITIC_TIMEOUT_SECONDS:-60} =~ ^[1-9][0-9]*$ ]] || { GF004_CRITIC_ERROR='critic timeout must be a positive integer'; return 1; }
   [[ ${GF_OPENAI_CRITIC_MAX_EVIDENCE_BYTES:-262144} =~ ^[1-9][0-9]*$ ]] || { GF004_CRITIC_ERROR='critic evidence limit must be a positive integer'; return 1; }
-  if [[ -z ${OPENAI_API_KEY:-} && !( ${GF_GF006_ENABLE_TEST_HOOKS:-0} == 1 && -n ${GF_GF006_CRITIC_FAULT:-} ) && !( ${GF_GF007_ENABLE_TEST_HOOKS:-0} == 1 && -n ${GF_GF007_CRITIC_SEQUENCE:-} ) ]]; then
+  if [[ -z ${OPENAI_API_KEY:-} && ! ( ${GF_GF006_ENABLE_TEST_HOOKS:-0} == 1 && -n ${GF_GF006_CRITIC_FAULT:-} ) && ! ( ${GF_GF007_ENABLE_TEST_HOOKS:-0} == 1 && -n ${GF_GF007_CRITIC_SEQUENCE:-} ) ]]; then
     GF004_CRITIC_ERROR='OPENAI_API_KEY is required for the configured critic'
     return 1
   fi
@@ -771,9 +781,16 @@ gf_execute_one() {
   if [[ ${GF_GF004_ENABLE_TEST_HOOKS:-0} == 1 ]]; then test_fault=${GF_GF004_FAULT:-simulate_success}; fi
   agent_start=$(date +%s%N); GF004_CODEX_INVOCATIONS=0
   gf008_checkpoint AGENT_DISPATCHING "$stage" || { gf004_fail_execution 'agent dispatch checkpoint failed'; return 1; }
-  if [[ -n $test_fault ]]; then GF004_CODEX_INVOCATIONS=1; gf008_checkpoint AGENT_STARTED "$stage" || return 1; gf004_test_agent "$GF004_WORKSPACE" "$stage" "$test_fault"; agent_ok=$?; else gf004_real_agent "$GF004_WORKSPACE" "$stage/prompt.md" "$stage" "$GF004_RUN_ID-initial"; agent_ok=$?; GF004_CODEX_INVOCATIONS=${GFH03_STARTS:-0}; fi
+  if [[ $test_fault == safe_not_started ]]; then
+    GF004_CODEX_INVOCATIONS=0
+    gf004_test_agent "$GF004_WORKSPACE" "$stage" "$test_fault"; agent_ok=$?
+  elif [[ -n $test_fault ]]; then
+    GF004_CODEX_INVOCATIONS=1; gf008_checkpoint AGENT_STARTED "$stage" || return 1; gf004_test_agent "$GF004_WORKSPACE" "$stage" "$test_fault"; agent_ok=$?
+  else
+    gf004_real_agent "$GF004_WORKSPACE" "$stage/prompt.md" "$stage" "$GF004_RUN_ID-initial"; agent_ok=$?; GF004_CODEX_INVOCATIONS=${GFH03_STARTS:-0}
+  fi
   agent_duration=$(gf004_elapsed "$agent_start" "$(date +%s%N)"); GF004_T_AGENT=$agent_duration
-  [[ $agent_ok -eq 0 ]] || { GF004_RUNTIME_STATUS=fail; gf004_append_agent_history initial 1 "$stage" "$agent_duration" fail; if [[ -z $test_fault ]]; then gf004_reconcile_transport_failure; else gf004_fail_execution "OpenClaw/Codex execution failed (exit $GF004_OPENCLAW_EXIT)"; fi; return 1; }
+  [[ $agent_ok -eq 0 ]] || { GF004_RUNTIME_STATUS=fail; gf004_append_agent_history initial 1 "$stage" "$agent_duration" fail; if [[ -z $test_fault || $test_fault == safe_not_started ]]; then gf004_reconcile_transport_failure; else gf004_fail_execution "OpenClaw/Codex execution failed (exit $GF004_OPENCLAW_EXIT)"; fi; return 1; }
   gf008_checkpoint AGENT_STARTED "$stage" || { gf004_fail_execution 'agent start proof checkpoint failed'; return 1; }
   if [[ $test_fault == missing_runtime ]]; then runtime_ok=false; elif [[ -n $test_fault ]]; then runtime_ok=true; elif gf004_runtime_is_proven "$stage"; then runtime_ok=true; else runtime_ok=false; fi
   $runtime_ok || { GF004_RUNTIME_STATUS=fail; gf004_append_agent_history initial 1 "$stage" "$agent_duration" fail; gf004_fail_execution 'Codex runtime ownership was not proven'; return 1; }

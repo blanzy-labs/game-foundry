@@ -1,0 +1,10 @@
+[Unit]
+Description=Example timer for Game Foundry bounded unattended invocation
+
+[Timer]
+OnCalendar=hourly
+Persistent=false
+Unit=game-foundry-unattended.service
+
+[Install]
+WantedBy=timers.target

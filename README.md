@@ -2,7 +2,7 @@
 
 An AI-operated, human-directed automation platform for building and operating small Godot games.
 
-Current status: **GF-001 — end-to-end acceptance**.
+Current implementation slice: **GF-009 — scheduled unattended bounded execution**.
 
 ## Validate workstation
 
@@ -17,6 +17,16 @@ Current status: **GF-001 — end-to-end acceptance**.
 ```
 
 See [the pipeline architecture](docs/architecture/pipeline.md).
+
+## Run one unattended bounded window
+
+```bash
+./scripts/gf-unattended-run.sh --json --max-tasks 1 --max-minutes 45 GF-MILESTONE-ID
+```
+
+The command performs recovery before fresh work, delegates execution to the
+existing bounded runner, and writes a machine-readable receipt. See the
+[GF-009 operating contract](docs/slices/GF-009-scheduled-unattended-execution.md).
 
 ## Run end-to-end acceptance
 
