@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "projects": [
+    {
+      "id": "turd-burglar",
+      "name": "Turd Burglar",
+      "platforms": [
+        "Linux"
+      ],
+      "active_milestone": null
+    }
+  ]
+}

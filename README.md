@@ -18,6 +18,22 @@ Current implementation slice: **GF-WEB-001 — Godot Web export target**.
 
 See [the pipeline architecture](docs/architecture/pipeline.md).
 
+## Local project dashboard
+
+Start the dependency-free local dashboard with:
+
+```bash
+./scripts/gf-dashboard.sh
+```
+
+Then open [http://127.0.0.1:8787](http://127.0.0.1:8787). Set
+`GF_DASHBOARD_PORT` to use a different local port.
+
+The dashboard is read-only. Project names and platforms come from
+`config/projects.json`; task progress and next actions come from the
+authoritative Game Foundry milestone status command. The dashboard cannot
+execute, transition, approve, or publish work.
+
 ## Run one unattended bounded window
 
 ```bash

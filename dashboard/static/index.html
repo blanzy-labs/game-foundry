@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="dark">
+    <title>Game Foundry Dashboard</title>
+    <link rel="stylesheet" href="/styles.css">
+    <script src="/app.js" defer></script>
+  </head>
+  <body>
+    <header class="masthead">
+      <div class="brand-mark" aria-hidden="true">GF</div>
+      <div>
+        <p class="eyebrow">Local operations console</p>
+        <h1>Game Foundry</h1>
+      </div>
+      <div class="connection"><span class="signal" aria-hidden="true"></span>Read-only monitor</div>
+    </header>
+
+    <main>
+      <section class="overview" aria-labelledby="overview-title">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Portfolio status</p>
+            <h2 id="overview-title">Project dashboard</h2>
+          </div>
+          <div class="refresh-controls">
+            <p id="last-refresh">Awaiting first refresh</p>
+            <button id="refresh-button" type="button">Refresh</button>
+          </div>
+        </div>
+
+        <div class="summary-grid" aria-label="Project summary">
+          <article class="summary-item"><span>Projects</span><strong id="summary-projects">—</strong></article>
+          <article class="summary-item"><span>Active</span><strong id="summary-active">—</strong></article>
+          <article class="summary-item attention"><span>Attention</span><strong id="summary-attention">—</strong></article>
+          <article class="summary-item complete"><span>Complete</span><strong id="summary-complete">—</strong></article>
+        </div>
+      </section>
+
+      <div id="refresh-error" class="alert" role="alert" hidden></div>
+      <div id="registry-errors" class="alert" role="status" hidden></div>
+
+      <section aria-labelledby="projects-title">
+        <div class="projects-heading">
+          <h2 id="projects-title">Managed projects</h2>
+          <span>Authoritative milestone telemetry</span>
+        </div>
+        <div id="project-list" class="project-list" aria-live="polite">
+          <div class="loading-panel">Retrieving project state…</div>
+        </div>
+      </section>
+    </main>
+
+    <footer>Local interface · Milestone state remains authoritative · No control endpoints</footer>
+  </body>
+</html>
