@@ -1,0 +1,82 @@
+{
+  "slice": "GF-WEB-001",
+  "status": "fail",
+  "implementation_acceptance": "pass",
+  "acceptance_id": "gf-web-001-acceptance-20260830T203254Z",
+  "artifact_dir": "artifacts/gf-web-001/gf-web-001-acceptance-20260830T203254Z",
+  "godot": {
+    "version": "4.7.2.stable.official.ed1daf0bf",
+    "target": "web",
+    "renderer": "gl_compatibility",
+    "threaded": false,
+    "template": "web_nothreads_release.zip"
+  },
+  "doctor": {
+    "status": "pass",
+    "critical_passed": 31,
+    "critical_failed": 0,
+    "web_export_templates": "pass"
+  },
+  "real_export": {
+    "fixture": "fixtures/web-export-project",
+    "preset": "Game Foundry Web",
+    "exit_code": 0,
+    "duration_seconds": 2.610451,
+    "bundle_file_count": 9,
+    "bundle_total_bytes": 39852163,
+    "largest_file": {
+      "path": "index.wasm",
+      "size_bytes": 39514754
+    }
+  },
+  "repeatability": {
+    "iterations": 20,
+    "passes": 20,
+    "failures": 0,
+    "real_godot_export_count": 3,
+    "successful_real_exports": 2,
+    "structurally_equivalent": true,
+    "byte_identical": true,
+    "changed_files": []
+  },
+  "negative_tests": {
+    "missing_templates": "pass",
+    "incompatible_renderer": "pass",
+    "threaded_profile": "pass",
+    "native_extension": "pass",
+    "missing_entrypoint": "pass",
+    "missing_wasm": "pass",
+    "hash_tamper": "pass",
+    "unsafe_manifest_path": "pass",
+    "source_mutation": "pass"
+  },
+  "regression": {
+    "doctor": "pass",
+    "GF-004": "pass",
+    "GF-005": "pass",
+    "GF-H02": "pass",
+    "GF-H03": "pass",
+    "GF-009": "pass",
+    "GF-008": "not_rerun"
+  },
+  "critic": {
+    "model": "gpt-5.6-sol",
+    "decision": "block",
+    "blockers": 1,
+    "warnings": 0,
+    "observations": 2,
+    "read_only_proof": true,
+    "blocker": "GF-008 current regression evidence is absent because its official suite requires OPENAI_API_KEY, which is unavailable in this OAuth-only shell"
+  },
+  "boundaries": {
+    "browser_runtime_acceptance": "not_tested",
+    "astro_site_integration": "not_implemented",
+    "cloudflare_deployment": "not_implemented",
+    "human_approval": "approved"
+  },
+  "release_decision": {
+    "owner_directed_commit": true,
+    "deterministic_blocker_acknowledged": true,
+    "decision_date": "2026-08-30"
+  }
+}

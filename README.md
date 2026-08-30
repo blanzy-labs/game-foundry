@@ -2,7 +2,7 @@
 
 An AI-operated, human-directed automation platform for building and operating small Godot games.
 
-Current implementation slice: **GF-009 — scheduled unattended bounded execution**.
+Current implementation slice: **GF-WEB-001 — Godot Web export target**.
 
 ## Validate workstation
 
@@ -44,6 +44,11 @@ Review the source-controlled [GF-001 evidence summary](reports/gf-001/evidence-s
 
 Production-gate hardening and fault-injection guidance are documented in [GF-002](docs/slices/GF-002-production-gate-hardening.md).
 Review the source-controlled [GF-002 evidence summary](reports/gf-002/evidence-summary.md).
+
+The reusable static Web release target is documented in
+[GF-WEB-001](docs/slices/GF-WEB-001-godot-web-export-target.md). It produces and
+integrity-verifies a Godot Web bundle; browser execution and site deployment
+remain separate later slices.
 
 The first real game workload is recorded in the [TB-001 evidence summary](reports/tb-001/evidence-summary.md).
 

@@ -9,6 +9,7 @@ case ${1:-} in
 esac
 
 repo_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+source "$repo_root/scripts/lib/gf-web-common.sh"
 export PATH="/home/${USER}/.local/bin:${PATH}"
 godot_bin=${GODOT_BIN:-godot}
 marker=GAME_FOUNDRY_GODOT_SMOKE_OK
@@ -153,15 +154,16 @@ headless_version=""
 if command -v "$godot_bin" >/dev/null 2>&1; then headless_version=$(timeout 20 "$godot_bin" --headless --version 2>/dev/null) || headless_version=""; fi
 [[ $headless_version == 4.7.2.stable.* ]] && add_check godot_headless critical "Godot headless" PASS "$headless_version" "" || add_check godot_headless critical "Godot headless" FAIL "$headless_version" "headless version check failed"
 
-templates_dir="${XDG_DATA_HOME:-/home/${USER}/.local/share}/godot/export_templates/4.7.2.stable"
-fallback_templates_dir="/home/${USER}/.local/share/godot/export_templates/4.7.2.stable"
-if [[ ! -f $templates_dir/version.txt || ! -f $templates_dir/linux_release.x86_64 ]]; then
-  templates_dir=$fallback_templates_dir
-fi
-if [[ -f $templates_dir/version.txt && -f $templates_dir/linux_release.x86_64 ]]; then
-  add_check export_templates critical "Godot export templates" PASS "4.7.2 Standard" "$templates_dir"
+templates_dir=$(gf_web_templates_dir "$godot_version")
+if gf_web_linux_templates_ready "$templates_dir"; then
+  add_check export_templates critical "Godot Linux export templates" PASS "4.7.2 Standard" "$templates_dir"
 else
-  add_check export_templates critical "Godot export templates" FAIL "" "install Godot_v4.7.2-stable_export_templates.tpz into $templates_dir"
+  add_check export_templates critical "Godot Linux export templates" FAIL "" "install linux_release.x86_64 for Godot 4.7.2 into $templates_dir"
+fi
+if gf_web_templates_ready "$templates_dir"; then
+  add_check web_export_templates critical "Godot Web export capability/templates" PASS "web_nothreads_release.zip" "$templates_dir"
+else
+  add_check web_export_templates critical "Godot Web export capability/templates" FAIL "" "install web_nothreads_release.zip for Godot 4.7.2 into $templates_dir"
 fi
 
 smoke_output=""
@@ -214,7 +216,9 @@ if $json_mode; then
     check=$(jq -n --arg id "${ids[$i]}" --arg group "${groups[$i]}" --arg label "${labels[$i]}" --arg status "${statuses[$i],,}" --arg version "${versions[$i]}" --arg detail "${details[$i]}" '{id:$id,group:$group,label:$label,status:$status,version:$version,detail:$detail}')
     checks_json=$(jq --argjson check "$check" '. + [$check]' <<<"$checks_json")
   done
-  jq -n --arg status "$overall" --arg timestamp "$timestamp" --arg ollama "$ollama_state" --arg godot "$godot_version" --arg openclaw "${openclaw_version:-}" --arg codex "$codex_version" --argjson passed "$critical_passed" --argjson failed "$critical_failed" --argjson models "$ollama_models" --argjson checks "$checks_json" '{status:$status,timestamp:$timestamp,critical:{passed:$passed,failed:$failed},optional:{ollama:$ollama,ollama_models:$models},tools:{godot:{status:(if $godot|startswith("4.7.2.stable") then "pass" else "fail" end),version:$godot},openclaw:{status:(if $openclaw=="" then "fail" else "pass" end),version:$openclaw},codex_harness:{version:$codex}},checks:$checks}'
+  web_status=fail
+  gf_web_templates_ready "$templates_dir" && web_status=pass
+  jq -n --arg status "$overall" --arg timestamp "$timestamp" --arg ollama "$ollama_state" --arg godot "$godot_version" --arg openclaw "${openclaw_version:-}" --arg codex "$codex_version" --arg web_status "$web_status" --arg templates_dir "$templates_dir" --argjson passed "$critical_passed" --argjson failed "$critical_failed" --argjson models "$ollama_models" --argjson checks "$checks_json" '{status:$status,timestamp:$timestamp,critical:{passed:$passed,failed:$failed},optional:{ollama:$ollama,ollama_models:$models},tools:{godot:{status:(if $godot|startswith("4.7.2.stable") then "pass" else "fail" end),version:$godot,web_export:{status:$web_status,threaded:false,template:"web_nothreads_release.zip",templates_dir:$templates_dir}},openclaw:{status:(if $openclaw=="" then "fail" else "pass" end),version:$openclaw},codex_harness:{version:$codex}},checks:$checks}'
 else
   printf 'GAME FOUNDRY DOCTOR\n===================\n\n'
   for i in "${!ids[@]}"; do
