@@ -236,7 +236,7 @@ def workspace_fingerprint(repo: pathlib.Path, paths: list[str], base_sha: str, c
     if len(set(normalized_paths)) != len(normalized_paths):
         raise ApprovalError("candidate paths are not unique after normalization", "ADOPTION_AMBIGUITY")
     identities = {path: path_identity(repo, path) for path in sorted(normalized_paths)}
-    canonical = json.dumps({"candidate_identity_version": candidate_identity_version, "base_sha": base_sha, "paths": identities}, sort_keys=True, separators=(",", ":")).encode()
+    canonical = json.dumps({"candidate_identity_version": candidate_identity_version, "paths": identities}, sort_keys=True, separators=(",", ":")).encode()
     return hashlib.sha256(canonical).hexdigest(), identities
 
 

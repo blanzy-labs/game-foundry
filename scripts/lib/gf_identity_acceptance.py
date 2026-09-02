@@ -10,7 +10,7 @@ import pathlib
 import subprocess
 import tempfile
 
-from gf_approval import ApprovalError, CANDIDATE_IDENTITY_VERSION, git_blob_identity, path_identity, status_paths, validate_manifest, workspace_fingerprint
+from gf_approval import ApprovalError, CANDIDATE_IDENTITY_VERSION, git_blob_identity, normalize_candidates, path_identity, status_paths, validate_manifest, workspace_fingerprint
 
 
 def run(args: list[str], cwd: pathlib.Path) -> str:
@@ -114,7 +114,14 @@ def main() -> int:
 
         git(source, "commit", "--allow-empty", "-q", "-m", "incompatible base")
         incompatible_base = git(source, "rev-parse", "HEAD")
-        require(workspace_fingerprint(source, ["bound.txt"], incompatible_base)[0] != dirty_fingerprint, "base revision did not change identity")
+        require(workspace_fingerprint(source, ["bound.txt"], incompatible_base)[0] == dirty_fingerprint, "file identity unexpectedly depends on base")
+        candidate_descriptor = {"sha": candidate, "tree_sha": git(source, "rev-parse", f"{candidate}^{{tree}}"), "unit_ids": ["UNIT"], "paths": ["bound.txt"]}
+        try:
+            normalize_candidates(source, incompatible_base, [candidate_descriptor], ["UNIT"])
+        except ApprovalError:
+            pass
+        else:
+            raise RuntimeError("candidate approval crossed an incompatible base")
         results["base_revision"] = "pass"
 
         bound.unlink()

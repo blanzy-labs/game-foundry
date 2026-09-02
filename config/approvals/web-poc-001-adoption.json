@@ -5,9 +5,8 @@
   "project_id": "game-foundry",
   "repository": ".",
   "bundle_id": "WEB-POC-001",
-  "base_sha": "78a037c23b30fbfd6ea5b0f1e6e3d4f11e3142d0",
   "candidate_identity_version": 2,
-  "candidate_patch_sha256": "ec009c644fccd42be3ae2e31c6b06cf074463b9dff88e4ebbc287ed72791c509",
+  "candidate_patch_sha256": "b4404711002bf4070c5b8bd81ca303606f78eca7b855666c7d2102ce39a3d351",
   "units": [
     {"id": "GF-WEB-002", "validation_evidence": "reports/gf-web-002/evidence-summary.json", "critic_required": false},
     {"id": "GF-WEB-003", "validation_evidence": "reports/gf-web-003/evidence-summary.json", "critic_required": true, "critic_evidence": "artifacts/gf-web-003/gf-web-003-acceptance-20260831T000712Z/critic/result.json"},
