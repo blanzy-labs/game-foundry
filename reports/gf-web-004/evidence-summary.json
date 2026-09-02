@@ -1,0 +1,66 @@
+{
+  "slice": "GF-WEB-004",
+  "status": "pass_with_warnings",
+  "artifact_root": "artifacts/gf-web-004/gf-web-004-acceptance-20260831T100611Z-95640",
+  "acceptance": {
+    "status": "pass",
+    "duration_seconds": 227.83007,
+    "failures": 0,
+    "game_checks_passed": 11,
+    "game_checks_failed": 0,
+    "game_browser_runs": 2,
+    "game_browser_passed": 2,
+    "linux": "pass",
+    "gf_web_001": "pass",
+    "gf_web_002": "pass",
+    "gf_web_003": "pass",
+    "manual_preview_smoke": "pass"
+  },
+  "game": {
+    "id": "cyber-shield",
+    "title": "Cyber Shield",
+    "engine": "Godot 4.7.2",
+    "architecture": "Node2D",
+    "viewport": {"width": 960, "height": 540},
+    "threat_labels": ["PHISHING", "VIRUS", "MALWARE", "DDoS", "RANSOMWARE", "BOTNET"],
+    "controls": ["Left", "Right", "A", "D", "mouse", "touch"]
+  },
+  "web": {
+    "bundle_file_count": 9,
+    "bundle_total_bytes": 39866473,
+    "largest_file": "index.wasm",
+    "largest_file_bytes": 39514754,
+    "hosting_profile": "cloudflare-pages-r2",
+    "pages_file_count": 5,
+    "r2_file_count": 4,
+    "site_route": "/games/cyber-shield/"
+  },
+  "critic": {
+    "model": "gpt-5.6-sol",
+    "calls": 1,
+    "decision": "pass",
+    "blockers": 0,
+    "warnings": 1,
+    "observations": 2,
+    "result": "artifacts/gf-web-004/gf-web-004-acceptance-20260831T100611Z-95640/critic/result.json"
+  },
+  "metrics": {
+    "source_files": 9,
+    "gameplay_code_lines": 350,
+    "repair_attempts": 1,
+    "human_implementation_interventions": 0
+  },
+  "preview_command": "./scripts/gf-web-local-preview.sh artifacts/gf-web-004/gf-web-004-acceptance-20260831T100611Z-95640/release",
+  "human_gate": {
+    "status": "approved",
+    "approved_on": "2026-08-31",
+    "authority": "human"
+  },
+  "human_web_gameplay_qa": "approved",
+  "boundaries": {
+    "mythadis_site_integration": "not_implemented",
+    "rcblanzy_site_integration": "not_implemented",
+    "remote_r2_upload": "not_implemented",
+    "cloudflare_deployment": "not_implemented"
+  }
+}

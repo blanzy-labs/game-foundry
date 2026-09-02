@@ -1,0 +1,20 @@
+; Cyber Shield is the first playable Game Foundry Web workload.
+config_version=5
+
+[application]
+config/name="Cyber Shield"
+config/description="Block falling cyber threats before three breaches occur."
+config/version="0.1.0"
+run/main_scene="res://main.tscn"
+
+[display]
+window/size/viewport_width=960
+window/size/viewport_height=540
+window/size/window_width_override=960
+window/size/window_height_override=540
+window/stretch/mode="canvas_items"
+
+[rendering]
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+environment/defaults/default_clear_color=Color(0.012, 0.027, 0.059, 1)

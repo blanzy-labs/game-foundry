@@ -66,6 +66,22 @@ The reusable static Web release target is documented in
 integrity-verifies a Godot Web bundle; browser execution and site deployment
 remain separate later slices.
 
+Real Chromium runtime acceptance is documented in
+[GF-WEB-002](docs/slices/GF-WEB-002-browser-runtime-acceptance.md). Install its
+pinned local dependency once with `npm ci && npx playwright install chromium`,
+then run `./scripts/gf-web-002-acceptance.sh`.
+
+Cloudflare-constrained packaging and local dual-origin preview are documented
+in [GF-WEB-003](docs/slices/GF-WEB-003-cloudflare-hosting-contract.md). A
+conforming hosting release can be inspected with
+`./scripts/gf-web-local-preview.sh <hosting-release>`; this binds loopback only
+and performs no remote deployment.
+
+The first complete playable Web workload is
+[Cyber Shield](docs/slices/GF-WEB-004-cyber-shield-real-web-game.md). Run its
+full acceptance with `./scripts/gf-web-004-acceptance.sh`; its final Pages/R2
+release remains local until a separate human-approved integration slice.
+
 The first real game workload is recorded in the [TB-001 evidence summary](reports/tb-001/evidence-summary.md).
 
 The data-driven level factory is recorded in the [TB-002 evidence summary](reports/tb-002/evidence-summary.md).
