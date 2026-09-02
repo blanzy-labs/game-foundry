@@ -1,0 +1,11 @@
+{
+  "provider": "cloudflare",
+  "profile": "cloudflare-pages",
+  "profile_version": "2026-08-30",
+  "max_file_bytes": 26214400,
+  "max_files": 20000,
+  "verified_at": "2026-08-30",
+  "verification_mode": "official_documentation",
+  "source_reference": "https://developers.cloudflare.com/pages/platform/limits/",
+  "large_asset_recommendation": "cloudflare-pages-r2"
+}

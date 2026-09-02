@@ -10,6 +10,7 @@ esac
 
 repo_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 source "$repo_root/scripts/lib/gf-web-common.sh"
+source "$repo_root/scripts/lib/gf-web-browser-common.sh"
 export PATH="/home/${USER}/.local/bin:${PATH}"
 godot_bin=${GODOT_BIN:-godot}
 marker=GAME_FOUNDRY_GODOT_SMOKE_OK
@@ -84,6 +85,21 @@ fi
 $node_supported && add_check node critical "Supported Node.js" PASS "$node_version" "" || add_check node critical "Supported Node.js" FAIL "$node_version" "requires 22.22.3+, 24.15+, 25.9+, or 26.x"
 
 if command -v npm >/dev/null 2>&1; then add_check npm critical npm PASS "$(npm --version 2>/dev/null)" ""; else add_check npm critical npm FAIL "" "command not found"; fi
+
+playwright_version=$(gf_web_playwright_version 2>/dev/null || true)
+if [[ $playwright_version == 1.62.1 ]]; then
+  add_check playwright critical "Playwright browser runtime" PASS "$playwright_version" "$repo_root/package-lock.json"
+else
+  add_check playwright critical "Playwright browser runtime" FAIL "$playwright_version" "run: npm ci"
+fi
+chromium_path=$(gf_web_chromium_path 2>/dev/null || true)
+chromium_version=""
+[[ -z $chromium_path ]] || chromium_version=$(gf_web_chromium_version "$chromium_path" || true)
+if [[ -x $chromium_path && -n $chromium_version ]]; then
+  add_check chromium critical "Playwright Chromium executable/runtime" PASS "$chromium_version" "$chromium_path"
+else
+  add_check chromium critical "Playwright Chromium executable/runtime" FAIL "" "run once after npm ci: npx playwright install chromium"
+fi
 
 if command -v openclaw >/dev/null 2>&1; then
   openclaw_version=$(openclaw --version 2>/dev/null | head -n 1)
@@ -218,7 +234,9 @@ if $json_mode; then
   done
   web_status=fail
   gf_web_templates_ready "$templates_dir" && web_status=pass
-  jq -n --arg status "$overall" --arg timestamp "$timestamp" --arg ollama "$ollama_state" --arg godot "$godot_version" --arg openclaw "${openclaw_version:-}" --arg codex "$codex_version" --arg web_status "$web_status" --arg templates_dir "$templates_dir" --argjson passed "$critical_passed" --argjson failed "$critical_failed" --argjson models "$ollama_models" --argjson checks "$checks_json" '{status:$status,timestamp:$timestamp,critical:{passed:$passed,failed:$failed},optional:{ollama:$ollama,ollama_models:$models},tools:{godot:{status:(if $godot|startswith("4.7.2.stable") then "pass" else "fail" end),version:$godot,web_export:{status:$web_status,threaded:false,template:"web_nothreads_release.zip",templates_dir:$templates_dir}},openclaw:{status:(if $openclaw=="" then "fail" else "pass" end),version:$openclaw},codex_harness:{version:$codex}},checks:$checks}'
+  browser_status=fail
+  gf_web_browser_ready && browser_status=pass
+  jq -n --arg status "$overall" --arg timestamp "$timestamp" --arg ollama "$ollama_state" --arg godot "$godot_version" --arg openclaw "${openclaw_version:-}" --arg codex "$codex_version" --arg web_status "$web_status" --arg templates_dir "$templates_dir" --arg browser_status "$browser_status" --arg node "$node_version" --arg playwright "$playwright_version" --arg chromium "$chromium_version" --arg chromium_path "$chromium_path" --argjson passed "$critical_passed" --argjson failed "$critical_failed" --argjson models "$ollama_models" --argjson checks "$checks_json" '{status:$status,timestamp:$timestamp,critical:{passed:$passed,failed:$failed},optional:{ollama:$ollama,ollama_models:$models},tools:{godot:{status:(if $godot|startswith("4.7.2.stable") then "pass" else "fail" end),version:$godot,web_export:{status:$web_status,threaded:false,template:"web_nothreads_release.zip",templates_dir:$templates_dir}},browser_runtime:{status:$browser_status,node_version:$node,playwright_version:$playwright,chromium_version:$chromium,chromium_path:$chromium_path},openclaw:{status:(if $openclaw=="" then "fail" else "pass" end),version:$openclaw},codex_harness:{version:$codex}},checks:$checks}'
 else
   printf 'GAME FOUNDRY DOCTOR\n===================\n\n'
   for i in "${!ids[@]}"; do
