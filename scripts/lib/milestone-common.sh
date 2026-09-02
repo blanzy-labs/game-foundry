@@ -230,6 +230,9 @@ gf_recalculate() {
   local milestone_id=$1 state_dir state_file task status desired dependency dependency_status attempts all_pass=true
   state_dir=$(gf_state_dir "$milestone_id")
   state_file="$state_dir/state.json"
+  # Human-gate satisfaction is terminal. Recalculation may derive readiness
+  # before the gate is approved, but it must never undo recorded approval.
+  [[ $(jq -r '.status' "$state_file") == complete ]] && return 0
   for task in "${GF_TASK_ORDER[@]}"; do
     status=$(jq -r --arg task "$task" '.tasks[$task].status' "$state_file")
     [[ $status == blocked || $status == ready ]] || { [[ $status == pass ]] || all_pass=false; continue; }
@@ -271,7 +274,7 @@ gf_next_result() {
       escalated) has_escalated=true ;;
     esac
   done
-  if [[ $(jq -r '.status' "$state_file") == pending_human || $(jq -r '.status' "$state_file") == automated_work_complete ]]; then
+  if [[ $(jq -r '.status' "$state_file") == pending_human || $(jq -r '.status' "$state_file") == automated_work_complete || $(jq -r '.status' "$state_file") == complete ]]; then
     printf 'MILESTONE_COMPLETE\n'
   elif $has_escalated || $has_blocked; then
     printf 'MILESTONE_BLOCKED\n'

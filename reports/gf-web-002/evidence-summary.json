@@ -1,0 +1,820 @@
+{
+  "slice": "GF-WEB-002",
+  "status": "pass_with_warnings",
+  "artifact_root": "artifacts/gf-web-002/gf-web-002-acceptance-20260830T215116Z",
+  "regression_root": "artifacts/gf-web-002/regression-20260830T213738Z",
+  "acceptance": {
+    "slice": "GF-WEB-002",
+    "status": "pass",
+    "started_at": "2026-08-30T21:51:16Z",
+    "finished_at": "2026-08-30T21:53:53Z",
+    "artifact_root": "artifacts/gf-web-002/gf-web-002-acceptance-20260830T215116Z",
+    "duration_seconds": 156.297765,
+    "healthy": {
+      "runs": 10,
+      "pass": 10,
+      "fail": 0
+    },
+    "deterministic_fault": {
+      "iterations": 20,
+      "mode": "pre_launch_server_bind_and_cleanup",
+      "pass": 20,
+      "fail": 0,
+      "full_negative_cases_pass": 12,
+      "full_negative_cases_run_once": true
+    },
+    "failures": 0,
+    "doctor": {
+      "status": "ready",
+      "timestamp": "2026-08-30T21:51:16Z",
+      "critical": {
+        "passed": 33,
+        "failed": 0
+      },
+      "optional": {
+        "ollama": "available_no_models",
+        "ollama_models": 0
+      },
+      "tools": {
+        "godot": {
+          "status": "pass",
+          "version": "4.7.2.stable.official.ed1daf0bf",
+          "web_export": {
+            "status": "pass",
+            "threaded": false,
+            "template": "web_nothreads_release.zip",
+            "templates_dir": "/home/blanzy/snap/code/259/.local/share/godot/export_templates/4.7.2.stable"
+          }
+        },
+        "browser_runtime": {
+          "status": "pass",
+          "node_version": "24.19.0",
+          "playwright_version": "1.62.1",
+          "chromium_version": "Google Chrome for Testing 151.0.7922.34 ",
+          "chromium_path": "/home/blanzy/.cache/ms-playwright/chromium-1234/chrome-linux64/chrome"
+        },
+        "openclaw": {
+          "status": "pass",
+          "version": "OpenClaw 2026.7.1-2 (0790d9f)"
+        },
+        "codex_harness": {
+          "version": "2026.7.1-1"
+        }
+      },
+      "checks": [
+        {
+          "id": "os",
+          "group": "critical",
+          "label": "Ubuntu 26.04",
+          "status": "pass",
+          "version": "26.04",
+          "detail": ""
+        },
+        {
+          "id": "arch",
+          "group": "critical",
+          "label": "Architecture x86_64",
+          "status": "pass",
+          "version": "x86_64",
+          "detail": ""
+        },
+        {
+          "id": "bash",
+          "group": "critical",
+          "label": "bash",
+          "status": "pass",
+          "version": "GNU bash, version 5.3.9(1)-release (x86_64-pc-linux-gnu)",
+          "detail": ""
+        },
+        {
+          "id": "git",
+          "group": "critical",
+          "label": "git",
+          "status": "pass",
+          "version": "git version 2.53.0",
+          "detail": ""
+        },
+        {
+          "id": "curl",
+          "group": "critical",
+          "label": "curl",
+          "status": "pass",
+          "version": "curl 8.18.0 (x86_64-pc-linux-gnu) libcurl/8.18.0 OpenSSL/3.5.5 zlib/1.3.1 brotli/1.2.0 zstd/1.5.7 libidn2/2.3.8 libpsl/0.21.2 libssh2/1.11.1 nghttp2/1.68.0 librtmp/2.3 mit-krb5/1.22.1 OpenLDAP/2.6.10",
+          "detail": ""
+        },
+        {
+          "id": "wget",
+          "group": "critical",
+          "label": "wget",
+          "status": "pass",
+          "version": "GNU Wget 1.25.0 built on linux-gnu.",
+          "detail": ""
+        },
+        {
+          "id": "unzip",
+          "group": "critical",
+          "label": "unzip",
+          "status": "pass",
+          "version": "UnZip 6.00 of 20 April 2009, by Debian. Original by Info-ZIP.",
+          "detail": ""
+        },
+        {
+          "id": "tar",
+          "group": "critical",
+          "label": "tar",
+          "status": "pass",
+          "version": "tar (GNU tar) 1.35",
+          "detail": ""
+        },
+        {
+          "id": "jq",
+          "group": "critical",
+          "label": "jq",
+          "status": "pass",
+          "version": "jq-1.8.1",
+          "detail": ""
+        },
+        {
+          "id": "sed",
+          "group": "critical",
+          "label": "sed",
+          "status": "pass",
+          "version": "sed (GNU sed) 4.9",
+          "detail": ""
+        },
+        {
+          "id": "awk",
+          "group": "critical",
+          "label": "awk",
+          "status": "pass",
+          "version": "mawk 1.3.4 20260129",
+          "detail": ""
+        },
+        {
+          "id": "grep",
+          "group": "critical",
+          "label": "grep",
+          "status": "pass",
+          "version": "grep (GNU grep) 3.12",
+          "detail": ""
+        },
+        {
+          "id": "sha256sum",
+          "group": "critical",
+          "label": "sha256sum",
+          "status": "pass",
+          "version": "sha256sum (uutils coreutils) 0.8.0",
+          "detail": ""
+        },
+        {
+          "id": "make",
+          "group": "critical",
+          "label": "make",
+          "status": "pass",
+          "version": "GNU Make 4.4.1",
+          "detail": ""
+        },
+        {
+          "id": "gh",
+          "group": "critical",
+          "label": "gh",
+          "status": "pass",
+          "version": "gh version 2.46.0 (2025-12-13 Ubuntu 2.46.0-4)",
+          "detail": ""
+        },
+        {
+          "id": "github_auth",
+          "group": "critical",
+          "label": "GitHub authentication",
+          "status": "pass",
+          "version": "authenticated",
+          "detail": ""
+        },
+        {
+          "id": "node",
+          "group": "critical",
+          "label": "Supported Node.js",
+          "status": "pass",
+          "version": "24.19.0",
+          "detail": ""
+        },
+        {
+          "id": "npm",
+          "group": "critical",
+          "label": "npm",
+          "status": "pass",
+          "version": "12.0.2",
+          "detail": ""
+        },
+        {
+          "id": "playwright",
+          "group": "critical",
+          "label": "Playwright browser runtime",
+          "status": "pass",
+          "version": "1.62.1",
+          "detail": "/home/blanzy/projects/game-foundry/package-lock.json"
+        },
+        {
+          "id": "chromium",
+          "group": "critical",
+          "label": "Playwright Chromium executable/runtime",
+          "status": "pass",
+          "version": "Google Chrome for Testing 151.0.7922.34 ",
+          "detail": "/home/blanzy/.cache/ms-playwright/chromium-1234/chrome-linux64/chrome"
+        },
+        {
+          "id": "openclaw",
+          "group": "critical",
+          "label": "OpenClaw",
+          "status": "pass",
+          "version": "OpenClaw 2026.7.1-2 (0790d9f)",
+          "detail": ""
+        },
+        {
+          "id": "openclaw_config",
+          "group": "critical",
+          "label": "OpenClaw configuration",
+          "status": "pass",
+          "version": "valid",
+          "detail": ""
+        },
+        {
+          "id": "openclaw_health",
+          "group": "optional",
+          "label": "OpenClaw gateway (observational)",
+          "status": "pass",
+          "version": "healthy",
+          "detail": "not used by canonical Game Foundry execution"
+        },
+        {
+          "id": "openclaw_local",
+          "group": "critical",
+          "label": "OpenClaw explicit local mode",
+          "status": "pass",
+          "version": "supported",
+          "detail": "GF-H03 canonical mode"
+        },
+        {
+          "id": "game_foundry_agent",
+          "group": "critical",
+          "label": "Game Foundry Codex agent policy",
+          "status": "pass",
+          "version": "stable configuration",
+          "detail": ""
+        },
+        {
+          "id": "codex_harness",
+          "group": "critical",
+          "label": "Codex harness",
+          "status": "pass",
+          "version": "2026.7.1-1",
+          "detail": ""
+        },
+        {
+          "id": "openai_auth",
+          "group": "critical",
+          "label": "OpenAI/Codex authentication",
+          "status": "pass",
+          "version": "configured",
+          "detail": ""
+        },
+        {
+          "id": "godot",
+          "group": "critical",
+          "label": "Godot 4.7.2 Standard",
+          "status": "pass",
+          "version": "4.7.2.stable.official.ed1daf0bf",
+          "detail": ""
+        },
+        {
+          "id": "godot_headless",
+          "group": "critical",
+          "label": "Godot headless",
+          "status": "pass",
+          "version": "4.7.2.stable.official.ed1daf0bf",
+          "detail": ""
+        },
+        {
+          "id": "export_templates",
+          "group": "critical",
+          "label": "Godot Linux export templates",
+          "status": "pass",
+          "version": "4.7.2 Standard",
+          "detail": "/home/blanzy/snap/code/259/.local/share/godot/export_templates/4.7.2.stable"
+        },
+        {
+          "id": "web_export_templates",
+          "group": "critical",
+          "label": "Godot Web export capability/templates",
+          "status": "pass",
+          "version": "web_nothreads_release.zip",
+          "detail": "/home/blanzy/snap/code/259/.local/share/godot/export_templates/4.7.2.stable"
+        },
+        {
+          "id": "godot_smoke",
+          "group": "critical",
+          "label": "Godot smoke fixture",
+          "status": "pass",
+          "version": "GAME_FOUNDRY_GODOT_SMOKE_OK",
+          "detail": ""
+        },
+        {
+          "id": "local_git",
+          "group": "critical",
+          "label": "Local Git repository",
+          "status": "pass",
+          "version": "main",
+          "detail": ""
+        },
+        {
+          "id": "github_remote",
+          "group": "critical",
+          "label": "GitHub remote",
+          "status": "pass",
+          "version": "https://github.com/blanzy-labs/game-foundry.git",
+          "detail": ""
+        },
+        {
+          "id": "ollama",
+          "group": "optional",
+          "label": "Ollama",
+          "status": "warn",
+          "version": "ollama version is 0.32.15",
+          "detail": "AVAILABLE_NO_MODELS"
+        }
+      ]
+    },
+    "canonical_browser_result": {
+      "schema_version": "1",
+      "status": "pass",
+      "browser": "chromium",
+      "browser_version": "151.0.7922.34",
+      "playwright_version": "1.62.1",
+      "node_version": "v24.19.0",
+      "headless": true,
+      "launch_arguments": [
+        "--disable-background-networking",
+        "--gf-web-acceptance-901885-67eb49b5ef355a82"
+      ],
+      "url": "http://127.0.0.1:37415/index.html",
+      "final_url": "http://127.0.0.1:37415/index.html",
+      "server": {
+        "bind_address": "127.0.0.1",
+        "port": 37415,
+        "root": "/home/blanzy/projects/game-foundry/artifacts/gf-web-002/gf-web-002-acceptance-20260830T215116Z/gf-web-001-release/web"
+      },
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      },
+      "small_viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "navigation_status": 200,
+      "wasm_requested": true,
+      "wasm_status": {
+        "path": "index.wasm",
+        "status": 200,
+        "content_type": "application/wasm",
+        "response_size": 39514754
+      },
+      "runtime_ready": true,
+      "runtime_ready_seconds": 0.8384926439999999,
+      "canvas_found": true,
+      "canvas_width": 1280,
+      "canvas_height": 720,
+      "rendering": {
+        "before": {
+          "length": 31698,
+          "sha256": "fcbc6de5cfd7f28b367d83333e9a877408b065b7e1b468839b71251c18df42ba"
+        },
+        "visual": {
+          "sample_width": 64,
+          "sample_height": 64,
+          "opaque_pixel_fraction": 1,
+          "unique_rgba_count": 6,
+          "luminance_range": 150.037,
+          "passed": true
+        },
+        "nonempty": true,
+        "changed_after_input": true,
+        "after": {
+          "length": 31774,
+          "sha256": "215e4abe9b3acc153087379f8136bf104a9c0793e84073d9e47c81ac57e94d6f"
+        }
+      },
+      "keyboard_test": {
+        "action": "Space",
+        "initial_state": "IDLE",
+        "expected_state": "INPUT_RECEIVED",
+        "observed_state": "INPUT_RECEIVED",
+        "passed": true,
+        "response_seconds": 0.06502672099999995
+      },
+      "mouse_test": {
+        "action": "left_click_canvas",
+        "passed": true,
+        "observed_state": "IDLE"
+      },
+      "resize_test": {
+        "viewport": {
+          "width": 1024,
+          "height": 640
+        },
+        "runtime_alive": true,
+        "canvas": {
+          "found": true,
+          "width": 1024,
+          "height": 640,
+          "css_width": 1024,
+          "css_height": 640,
+          "visible": true
+        },
+        "passed": true
+      },
+      "small_viewport_test": {
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "navigation_status": 200,
+        "runtime_ready": true,
+        "runtime_ready_seconds": 0.7458019079999999,
+        "canvas": {
+          "found": true,
+          "width": 390,
+          "height": 844,
+          "css_width": 390,
+          "css_height": 844,
+          "visible": true
+        },
+        "passed": true
+      },
+      "console_error_count": 0,
+      "page_error_count": 0,
+      "failed_required_request_count": 0,
+      "screenshot": "/home/blanzy/projects/game-foundry/artifacts/gf-web-002/gf-web-002-acceptance-20260830T215116Z/healthy/run-01/browser-runtime-ready.png",
+      "total_seconds": 3.26787071,
+      "failure_reason": null,
+      "fault": "none",
+      "cleanup": {
+        "browser_closed": true,
+        "server_closed": true,
+        "browser_close_error": null,
+        "server_close_error": null,
+        "browser_processes_remaining": []
+      },
+      "required_manifest_paths": [
+        "index.html",
+        "index.js",
+        "index.pck",
+        "index.wasm"
+      ],
+      "optional_manifest_paths": [
+        "index.apple-touch-icon.png",
+        "index.audio.position.worklet.js",
+        "index.audio.worklet.js",
+        "index.icon.png",
+        "index.png"
+      ]
+    },
+    "checks": [
+      {
+        "group": "preflight",
+        "name": "doctor",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "preflight",
+        "name": "gf_web_001_release",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "healthy",
+        "name": "real_chromium_01",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "healthy",
+        "name": "real_chromium_02",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "healthy",
+        "name": "real_chromium_03",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "healthy",
+        "name": "real_chromium_04",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "healthy",
+        "name": "real_chromium_05",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "healthy",
+        "name": "real_chromium_06",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "healthy",
+        "name": "real_chromium_07",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "healthy",
+        "name": "real_chromium_08",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "healthy",
+        "name": "real_chromium_09",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "healthy",
+        "name": "real_chromium_10",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "negative",
+        "name": "missing_wasm",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "negative",
+        "name": "broken_javascript",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "negative",
+        "name": "runtime_never_ready",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "negative",
+        "name": "page_exception",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "negative",
+        "name": "console_error",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "negative",
+        "name": "input_nonresponsive",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "negative",
+        "name": "zero_size_canvas",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "negative",
+        "name": "blank_canvas",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "negative",
+        "name": "bad_mime",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "negative",
+        "name": "http_server_failure",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "negative",
+        "name": "http_server_close_failure",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "negative",
+        "name": "orphan_cleanup",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "deterministic",
+        "name": "server_cleanup_01",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "deterministic",
+        "name": "server_cleanup_02",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "deterministic",
+        "name": "server_cleanup_03",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "deterministic",
+        "name": "server_cleanup_04",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "deterministic",
+        "name": "server_cleanup_05",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "deterministic",
+        "name": "server_cleanup_06",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "deterministic",
+        "name": "server_cleanup_07",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "deterministic",
+        "name": "server_cleanup_08",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "deterministic",
+        "name": "server_cleanup_09",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "deterministic",
+        "name": "server_cleanup_10",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "deterministic",
+        "name": "server_cleanup_11",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "deterministic",
+        "name": "server_cleanup_12",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "deterministic",
+        "name": "server_cleanup_13",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "deterministic",
+        "name": "server_cleanup_14",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "deterministic",
+        "name": "server_cleanup_15",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "deterministic",
+        "name": "server_cleanup_16",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "deterministic",
+        "name": "server_cleanup_17",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "deterministic",
+        "name": "server_cleanup_18",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "deterministic",
+        "name": "server_cleanup_19",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "deterministic",
+        "name": "server_cleanup_20",
+        "status": "pass",
+        "detail": null
+      }
+    ],
+    "boundaries": {
+      "chromium_runtime_acceptance": "pass",
+      "multi_browser_compatibility": "not_tested",
+      "mobile_touch_ux": "not_tested",
+      "astro_site_integration": "not_implemented",
+      "cloudflare_deployment": "not_implemented"
+    }
+  },
+  "regressions": {
+    "doctor": {
+      "status": "ready",
+      "evidence": "artifacts/gf-web-002/regression-20260830T213738Z/doctor.json"
+    },
+    "gf_h03": {
+      "status": "pass",
+      "evidence": "artifacts/gf-web-002/regression-20260830T213738Z/gf-h03/result.json"
+    },
+    "gf_009": {
+      "status": "pass",
+      "evidence": "artifacts/gf-web-002/regression-20260830T213738Z/gf-009/evidence-summary.json"
+    },
+    "gf_web_001": {
+      "status": "pass",
+      "evidence": "artifacts/gf-web-002/regression-20260830T213738Z/gf-web-001/evidence-summary.json"
+    },
+    "gf_web_002": {
+      "status": "pass",
+      "evidence": "artifacts/gf-web-002/gf-web-002-acceptance-20260830T215116Z/evidence-summary.json"
+    }
+  },
+  "critic": {
+    "status": "pass",
+    "model": "gpt-5.6-sol",
+    "decision": "pass",
+    "blockers": 0,
+    "warnings": 2,
+    "observations": 0,
+    "result_path": "artifacts/gf-web-002/gf-web-002-acceptance-20260830T215116Z/critic/result.json",
+    "review": {
+      "decision": "pass",
+      "summary": "GF-WEB-002 satisfies the acceptance contract after the second bounded repair. Evidence proves 10/10 real Chromium boots, actual WASM and Godot READY execution, pixel-level rendering and input changes, clean browser health, 12 controlled negative checks, 20 pre-launch cleanup iterations, regressions, and required cleanup behavior.",
+      "findings": [
+        {
+          "severity": "warning",
+          "category": "evidence",
+          "summary": "keyboard_test.initial_state is sampled before the mouse interaction, although the mouse changes runtime_state before Space is sent. Keyboard delivery remains proven by GF_WEB_KEYBOARD_RECEIVED and the keyboard-driven redraw, but the recorded state-transition chronology is imprecise.",
+          "evidence_refs": [
+            "PATCH",
+            "VALIDATION_RESULT"
+          ],
+          "recommended_action": "Sample and record runtime_state and keyboard_received immediately before Space, or use distinct mouse and keyboard runtime states."
+        },
+        {
+          "severity": "warning",
+          "category": "quality",
+          "summary": "The aggregate deterministic repeatability counters are emitted as pass=fault_iterations and fail=0 rather than derived from recorded iteration outcomes. They are accurate for this successful evidence set, and failures still make the overall result fail, but a failing run could contain contradictory summary counts.",
+          "evidence_refs": [
+            "VALIDATOR",
+            "VALIDATION_RESULT"
+          ],
+          "recommended_action": "Track deterministic pass/fail counters explicitly and serialize their actual values."
+        }
+      ]
+    }
+  },
+  "boundaries": {
+    "chromium_runtime_acceptance": "pass",
+    "multi_browser_compatibility": "not_tested",
+    "mobile_touch_ux": "not_tested",
+    "astro_site_integration": "not_implemented",
+    "cloudflare_deployment": "not_implemented"
+  }
+}

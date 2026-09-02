@@ -1,0 +1,970 @@
+{
+  "slice": "GF-WEB-003",
+  "status": "pass",
+  "human_gate": {
+    "status": "approved",
+    "approved_on": "2026-08-31",
+    "authority": "human"
+  },
+  "artifact_root": "artifacts/gf-web-003/gf-web-003-acceptance-20260831T000712Z",
+  "regression_root": "artifacts/gf-web-003/regression-20260831T000921Z",
+  "acceptance": {
+    "slice": "GF-WEB-003",
+    "status": "pass",
+    "started_at": "2026-08-31T00:07:12Z",
+    "finished_at": "2026-08-31T00:09:16Z",
+    "artifact_root": "/home/blanzy/projects/game-foundry/artifacts/gf-web-003/gf-web-003-acceptance-20260831T000712Z",
+    "duration_seconds": 124.007406,
+    "source_web_manifest": "/home/blanzy/projects/game-foundry/artifacts/gf-web-003/gf-web-003-acceptance-20260831T000712Z/gf-web-001-release/web-release.json",
+    "source_web_manifest_sha256": "dc5904cc6c54ea78a6efe89f27c1911ded43217f23e0a1c23c3bff95906819a8",
+    "provider": "cloudflare",
+    "canonical_hosting_profile": "cloudflare-pages-r2",
+    "pages_limit_bytes": 26214400,
+    "largest_source_file": "index.wasm",
+    "largest_source_file_bytes": 39514754,
+    "pages_file_count": 5,
+    "pages_total_bytes": 324422,
+    "r2_file_count": 4,
+    "r2_total_bytes": 39528777,
+    "asset_origin_mode": "placeholder",
+    "cross_origin_required": true,
+    "cors_required": true,
+    "local_site_url": "http://127.0.0.1:43133",
+    "local_asset_url": "http://127.0.0.1:37487",
+    "browser_runtime_result": {
+      "schema_version": "1",
+      "status": "pass",
+      "browser": "chromium",
+      "browser_version": "151.0.7922.34",
+      "playwright_version": "1.62.1",
+      "node_version": "v24.19.0",
+      "headless": true,
+      "launch_arguments": [
+        "--disable-background-networking",
+        "--gf-web-acceptance-1434942-2b6c0c04b48d7504"
+      ],
+      "url": "http://127.0.0.1:43133/games/web-fixture/index.html",
+      "final_url": "http://127.0.0.1:43133/games/web-fixture/index.html",
+      "server": {
+        "bind_address": "127.0.0.1",
+        "port": 43133,
+        "root": "/home/blanzy/projects/game-foundry/artifacts/gf-web-003/gf-web-003-acceptance-20260831T000712Z/healthy/run-01/finalized-local/pages",
+        "asset_port": 37487,
+        "asset_root": "/home/blanzy/projects/game-foundry/artifacts/gf-web-003/gf-web-003-acceptance-20260831T000712Z/healthy/run-01/finalized-local/r2"
+      },
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      },
+      "small_viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "navigation_status": 200,
+      "wasm_requested": true,
+      "wasm_status": {
+        "path": "assets/web-fixture/dc5904cc6c54ea78/index.wasm",
+        "status": 200,
+        "content_type": "application/wasm",
+        "response_size": 39514754,
+        "url": "http://127.0.0.1:37487/assets/web-fixture/dc5904cc6c54ea78/index.wasm",
+        "origin": "http://127.0.0.1:37487",
+        "access_control_allow_origin": "http://127.0.0.1:43133"
+      },
+      "runtime_ready": true,
+      "runtime_ready_seconds": 0.823704864,
+      "canvas_found": true,
+      "canvas_width": 1280,
+      "canvas_height": 720,
+      "rendering": {
+        "before": {
+          "length": 31698,
+          "sha256": "fcbc6de5cfd7f28b367d83333e9a877408b065b7e1b468839b71251c18df42ba"
+        },
+        "visual": {
+          "sample_width": 64,
+          "sample_height": 64,
+          "opaque_pixel_fraction": 1,
+          "unique_rgba_count": 6,
+          "luminance_range": 150.037,
+          "passed": true
+        },
+        "nonempty": true,
+        "changed_after_input": true,
+        "after": {
+          "length": 31774,
+          "sha256": "215e4abe9b3acc153087379f8136bf104a9c0793e84073d9e47c81ac57e94d6f"
+        }
+      },
+      "keyboard_test": {
+        "action": "Space",
+        "initial_state": "IDLE",
+        "expected_state": "INPUT_RECEIVED",
+        "observed_state": "INPUT_RECEIVED",
+        "passed": true,
+        "response_seconds": 0.017543125000000145
+      },
+      "mouse_test": {
+        "action": "left_click_canvas",
+        "passed": true,
+        "observed_state": "IDLE"
+      },
+      "resize_test": {
+        "viewport": {
+          "width": 1024,
+          "height": 640
+        },
+        "runtime_alive": true,
+        "canvas": {
+          "found": true,
+          "width": 1024,
+          "height": 640,
+          "css_width": 1024,
+          "css_height": 640,
+          "visible": true
+        },
+        "passed": true
+      },
+      "small_viewport_test": {
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "navigation_status": 200,
+        "runtime_ready": true,
+        "runtime_ready_seconds": 0.7263734640000002,
+        "canvas": {
+          "found": true,
+          "width": 390,
+          "height": 844,
+          "css_width": 390,
+          "css_height": 844,
+          "visible": true
+        },
+        "passed": true
+      },
+      "console_error_count": 0,
+      "page_error_count": 0,
+      "failed_required_request_count": 0,
+      "screenshot": "/home/blanzy/projects/game-foundry/artifacts/gf-web-003/gf-web-003-acceptance-20260831T000712Z/healthy/run-01/browser-runtime-ready.png",
+      "total_seconds": 3.326289682,
+      "failure_reason": null,
+      "fault": "none",
+      "cleanup": {
+        "browser_closed": true,
+        "server_closed": true,
+        "site_server_closed": true,
+        "asset_server_closed": true,
+        "browser_close_error": null,
+        "server_close_error": null,
+        "asset_server_close_error": null,
+        "browser_processes_remaining": []
+      },
+      "required_manifest_paths": [
+        "games/web-fixture/index.html",
+        "games/web-fixture/index.js",
+        "assets/web-fixture/dc5904cc6c54ea78/index.pck",
+        "assets/web-fixture/dc5904cc6c54ea78/index.wasm"
+      ],
+      "optional_manifest_paths": [
+        "games/web-fixture/index.apple-touch-icon.png",
+        "assets/web-fixture/dc5904cc6c54ea78/index.audio.position.worklet.js",
+        "assets/web-fixture/dc5904cc6c54ea78/index.audio.worklet.js",
+        "games/web-fixture/index.icon.png",
+        "games/web-fixture/index.png"
+      ],
+      "hosting_profile": "cloudflare-pages-r2",
+      "site_url": "http://127.0.0.1:43133",
+      "asset_url": "http://127.0.0.1:37487",
+      "cross_origin_required": true,
+      "cors": {
+        "required": true,
+        "site_origin": "http://127.0.0.1:43133",
+        "asset_origin": "http://127.0.0.1:37487",
+        "wasm_allow_origin": "http://127.0.0.1:43133",
+        "passed": true
+      }
+    },
+    "manual_preview_supported": true,
+    "repeatability": {
+      "real_split_browser": {
+        "runs": 10,
+        "pass": 10,
+        "fail": 0
+      },
+      "deterministic_packaging": {
+        "runs": 20,
+        "pass": 20,
+        "fail": 0
+      }
+    },
+    "negative_tests": [
+      {
+        "group": "negative",
+        "name": "pages_oversize_rejected",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "negative",
+        "name": "missing_r2_asset",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "negative",
+        "name": "large_asset_leaked_pages",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "negative",
+        "name": "manifest_package_mismatch",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "negative",
+        "name": "hash_tamper",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "negative",
+        "name": "unsafe_path",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "negative",
+        "name": "duplicate_deployment_path",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "negative",
+        "name": "source_asset_omission",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "negative",
+        "name": "missing_entrypoint_transformation",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "negative",
+        "name": "incomplete_cors_header_contract",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "negative",
+        "name": "external_source_manifest_path",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "negative",
+        "name": "entrypoint_deployment_mismatch",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "negative",
+        "name": "placeholder_transformation_hash_mismatch",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "negative",
+        "name": "inflated_self_declared_pages_limit",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "negative",
+        "name": "non_wasm_mime_contract",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "negative",
+        "name": "per_file_cache_contract",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "negative",
+        "name": "invalid_embedded_gf_web_001_manifest",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "negative",
+        "name": "source_content_role_mismatch",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "negative",
+        "name": "hosting_source_identity_mismatch",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "negative",
+        "name": "ambient_profile_override_rejected",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "negative",
+        "name": "release_root_symlink",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "negative",
+        "name": "hosting_manifest_symlink",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "negative",
+        "name": "source_manifest_symlink",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "negative",
+        "name": "package_root_symlink",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "negative",
+        "name": "nested_package_symlink",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "negative",
+        "name": "wrong_asset_origin",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "negative",
+        "name": "missing_cors",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "negative",
+        "name": "wrong_cors_origin",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "negative",
+        "name": "wrong_wasm_mime",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "negative",
+        "name": "dual_server_cleanup",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "negative",
+        "name": "malformed_origin_finalization",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "negative",
+        "name": "invalid_fixed_origin_manifest",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "negative",
+        "name": "finalized_cors_site_origin_mismatch",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "negative",
+        "name": "invalid_runtime_target",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "negative",
+        "name": "invalid_site_package",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "negative",
+        "name": "invalid_asset_package",
+        "status": "pass",
+        "detail": null
+      }
+    ],
+    "failures": 0,
+    "failure_reason": null,
+    "checks": [
+      {
+        "group": "preflight",
+        "name": "doctor",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "preflight",
+        "name": "gf_web_001",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "provider",
+        "name": "pages_oversize_classification",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "negative",
+        "name": "pages_oversize_rejected",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "package",
+        "name": "split_release",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "package",
+        "name": "hosting_verification",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "healthy",
+        "name": "split_chromium_01",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "healthy",
+        "name": "split_chromium_02",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "healthy",
+        "name": "split_chromium_03",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "healthy",
+        "name": "split_chromium_04",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "healthy",
+        "name": "split_chromium_05",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "healthy",
+        "name": "split_chromium_06",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "healthy",
+        "name": "split_chromium_07",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "healthy",
+        "name": "split_chromium_08",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "healthy",
+        "name": "split_chromium_09",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "healthy",
+        "name": "split_chromium_10",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "negative",
+        "name": "missing_r2_asset",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "negative",
+        "name": "large_asset_leaked_pages",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "negative",
+        "name": "manifest_package_mismatch",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "negative",
+        "name": "hash_tamper",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "negative",
+        "name": "unsafe_path",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "negative",
+        "name": "duplicate_deployment_path",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "negative",
+        "name": "source_asset_omission",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "negative",
+        "name": "missing_entrypoint_transformation",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "negative",
+        "name": "incomplete_cors_header_contract",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "negative",
+        "name": "external_source_manifest_path",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "negative",
+        "name": "entrypoint_deployment_mismatch",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "negative",
+        "name": "placeholder_transformation_hash_mismatch",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "negative",
+        "name": "inflated_self_declared_pages_limit",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "negative",
+        "name": "non_wasm_mime_contract",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "negative",
+        "name": "per_file_cache_contract",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "negative",
+        "name": "invalid_embedded_gf_web_001_manifest",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "negative",
+        "name": "source_content_role_mismatch",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "negative",
+        "name": "hosting_source_identity_mismatch",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "negative",
+        "name": "ambient_profile_override_rejected",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "negative",
+        "name": "release_root_symlink",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "negative",
+        "name": "hosting_manifest_symlink",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "negative",
+        "name": "source_manifest_symlink",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "negative",
+        "name": "package_root_symlink",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "negative",
+        "name": "nested_package_symlink",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "negative",
+        "name": "wrong_asset_origin",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "negative",
+        "name": "missing_cors",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "negative",
+        "name": "wrong_cors_origin",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "negative",
+        "name": "wrong_wasm_mime",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "negative",
+        "name": "dual_server_cleanup",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "negative",
+        "name": "malformed_origin_finalization",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "negative",
+        "name": "invalid_fixed_origin_manifest",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "negative",
+        "name": "finalized_cors_site_origin_mismatch",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "negative",
+        "name": "invalid_runtime_target",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "negative",
+        "name": "invalid_site_package",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "negative",
+        "name": "invalid_asset_package",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "deterministic",
+        "name": "package_verify_01",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "deterministic",
+        "name": "package_verify_02",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "deterministic",
+        "name": "package_verify_03",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "deterministic",
+        "name": "package_verify_04",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "deterministic",
+        "name": "package_verify_05",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "deterministic",
+        "name": "package_verify_06",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "deterministic",
+        "name": "package_verify_07",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "deterministic",
+        "name": "package_verify_08",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "deterministic",
+        "name": "package_verify_09",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "deterministic",
+        "name": "package_verify_10",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "deterministic",
+        "name": "package_verify_11",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "deterministic",
+        "name": "package_verify_12",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "deterministic",
+        "name": "package_verify_13",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "deterministic",
+        "name": "package_verify_14",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "deterministic",
+        "name": "package_verify_15",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "deterministic",
+        "name": "package_verify_16",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "deterministic",
+        "name": "package_verify_17",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "deterministic",
+        "name": "package_verify_18",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "deterministic",
+        "name": "package_verify_19",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "deterministic",
+        "name": "package_verify_20",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "preview",
+        "name": "manual_preview_smoke",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "preview",
+        "name": "pages_only_single_origin_smoke",
+        "status": "pass",
+        "detail": null
+      },
+      {
+        "group": "preview",
+        "name": "pages_only_chromium",
+        "status": "pass",
+        "detail": null
+      }
+    ],
+    "boundaries": {
+      "local_production_like_hosting_simulation": "pass",
+      "mythadis_site_integration": "not_implemented",
+      "rcblanzy_site_integration": "not_implemented",
+      "remote_r2_upload": "not_implemented",
+      "cloudflare_deployment": "not_implemented"
+    }
+  },
+  "regressions": {
+    "doctor": {
+      "status": "ready",
+      "evidence": "artifacts/gf-web-003/regression-20260831T000921Z/doctor.json"
+    },
+    "gf_h03": {
+      "status": "pass",
+      "evidence": "artifacts/gf-web-003/regression-20260831T000921Z/gf-h03/result.json"
+    },
+    "gf_009": {
+      "status": "pass",
+      "evidence": "artifacts/gf-web-003/regression-20260831T000921Z/gf-009/evidence-summary.json"
+    },
+    "gf_web_001": {
+      "status": "pass",
+      "evidence": "artifacts/gf-web-003/regression-20260831T000921Z/gf-web-001/evidence-summary.json"
+    },
+    "gf_web_002": {
+      "status": "pass",
+      "evidence": "artifacts/gf-web-003/regression-20260831T000921Z/gf-web-002/evidence-summary.json"
+    },
+    "gf_web_003": {
+      "status": "pass",
+      "evidence": "artifacts/gf-web-003/gf-web-003-acceptance-20260831T000712Z/result.json"
+    }
+  },
+  "critic": {
+    "model": "gpt-5.6-sol",
+    "decision": "pass",
+    "blockers": 0,
+    "warnings": 0,
+    "observations": 4,
+    "result": "artifacts/gf-web-003/gf-web-003-acceptance-20260831T000712Z/critic/result.json",
+    "findings": [
+      {
+        "severity": "observation",
+        "category": "release-verifier",
+        "summary": "The verifier rejects release-root, metadata, package-root, nested-package, and provenance symlinks; enforces resolved containment; and refuses symlinked or escaping package inventory entries. The required independent symlink negatives pass.",
+        "evidence_refs": [
+          "VALIDATOR:scripts/lib/gf-web-hosting.py",
+          "VALIDATION_RESULT:artifacts/gf-web-003/gf-web-003-acceptance-20260831T000712Z/result.json",
+          "VALIDATION_LOG:artifacts/gf-web-003/gf-web-003-acceptance-20260831T000712Z/negative"
+        ],
+        "recommended_action": null
+      },
+      {
+        "severity": "observation",
+        "category": "source-provenance",
+        "summary": "Embedded GF-WEB-001 evidence is revalidated for runtime semantics, safe unique inventory, hashes and sizes, aggregate fields, required roles, entrypoint references, thread marker, original bytes, content-role correspondence, and hosting identity. Semantic, role-drift, and identity-drift negatives pass.",
+        "evidence_refs": [
+          "VALIDATOR:scripts/lib/gf-web-hosting.py",
+          "VALIDATION_RESULT:artifacts/gf-web-003/gf-web-003-acceptance-20260831T000712Z/hosting-verification.json",
+          "VALIDATION_LOG:artifacts/gf-web-003/gf-web-003-acceptance-20260831T000712Z/negative"
+        ],
+        "recommended_action": null
+      },
+      {
+        "severity": "observation",
+        "category": "hosting-runtime",
+        "summary": "The checked-in provider profile is authoritative; placement and finalization are deterministic; finalized CORS is bound to the site origin; and the preview server serves only manifested paths using declared MIME and cache classes. Real split Godot and synthetic Pages-only Chromium paths both pass with reconciled request counters and clean shutdown.",
+        "evidence_refs": [
+          "DESIGN:docs/slices/GF-WEB-003-cloudflare-hosting-contract.md",
+          "VALIDATOR:config/hosting/cloudflare-pages.json",
+          "VALIDATOR:scripts/web/hosting-server.mjs",
+          "VALIDATOR:scripts/web/browser-acceptance.mjs",
+          "VALIDATION_RESULT:artifacts/gf-web-003/gf-web-003-acceptance-20260831T000712Z/healthy/run-01/browser-result.json",
+          "VALIDATION_RESULT:artifacts/gf-web-003/gf-web-003-acceptance-20260831T000712Z/pages-only-browser/browser-result.json",
+          "VALIDATION_LOG:artifacts/gf-web-003/gf-web-003-acceptance-20260831T000712Z/healthy/run-01/network.json"
+        ],
+        "recommended_action": null
+      },
+      {
+        "severity": "observation",
+        "category": "acceptance-evidence",
+        "summary": "Final evidence records the 26,214,400-byte Pages ceiling against a 39,514,754-byte WASM, 10/10 split Chromium runs, 20/20 deterministic iterations, 36/36 negatives, both preview modes, and no deployment or credentials. Doctor, GF-H03, GF-009, GF-WEB-001, and GF-WEB-002 regressions are fresh after the final source repairs and pass.",
+        "evidence_refs": [
+          "VALIDATION_RESULT:reports/gf-web-003/evidence-summary.json",
+          "VALIDATION_RESULT:artifacts/gf-web-003/gf-web-003-acceptance-20260831T000712Z/result.json",
+          "VALIDATION_RESULT:artifacts/gf-web-003/regression-20260831T000921Z/doctor.json",
+          "VALIDATION_RESULT:artifacts/gf-web-003/regression-20260831T000921Z/gf-h03/result.json",
+          "VALIDATION_RESULT:artifacts/gf-web-003/regression-20260831T000921Z/gf-009/evidence-summary.json",
+          "VALIDATION_RESULT:artifacts/gf-web-003/regression-20260831T000921Z/gf-web-001/evidence-summary.json",
+          "VALIDATION_RESULT:artifacts/gf-web-003/regression-20260831T000921Z/gf-web-002/evidence-summary.json"
+        ],
+        "recommended_action": null
+      }
+    ]
+  },
+  "boundaries": {
+    "local_production_like_hosting_simulation": "pass",
+    "mythadis_site_integration": "not_implemented",
+    "rcblanzy_site_integration": "not_implemented",
+    "remote_r2_upload": "not_implemented",
+    "cloudflare_deployment": "not_implemented"
+  }
+}

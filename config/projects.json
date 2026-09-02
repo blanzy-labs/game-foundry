@@ -8,6 +8,15 @@
         "Linux"
       ],
       "active_milestone": null
+    },
+    {
+      "id": "cyber-shield",
+      "name": "Cyber Shield",
+      "platforms": [
+        "Linux",
+        "Web"
+      ],
+      "active_milestone": null
     }
   ]
 }

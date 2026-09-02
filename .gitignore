@@ -4,6 +4,9 @@ builds/
 tmp/
 .cache/
 .vscode/
+node_modules/
+__pycache__/
+*.py[cod]
 artifacts/**
 !artifacts/.gitkeep
 state/*/

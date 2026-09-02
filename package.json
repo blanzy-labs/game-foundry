@@ -1,0 +1,9 @@
+{
+  "name": "game-foundry-browser-acceptance",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Pinned browser runtime used by Game Foundry Web acceptance.",
+  "devDependencies": {
+    "playwright": "1.62.1"
+  }
+}

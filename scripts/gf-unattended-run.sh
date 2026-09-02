@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -u -o pipefail
 
+# This boundary is inherited by every milestone, agent, validator, and helper
+# subprocess. Approval automation fails closed whenever this marker is present.
+export GF_UNATTENDED_RUN=1
+
 repo_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 cli="$repo_root/scripts/gf-milestone.sh"
 state_root=$(realpath -m "${GF_MILESTONE_STATE_ROOT:-$repo_root/state}")

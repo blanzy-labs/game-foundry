@@ -38,6 +38,12 @@ Production publication always requires explicit human approval.
 - Dependency order is determined by deterministic Game Foundry state, not by an LLM.
 - Human approval remains required at configured human milestone gates.
 - Coding agents cannot commit accepted milestone work; Game Foundry owns accepted milestone commits.
+- After an explicit current human approval instruction, an operator-facing
+  agent may invoke the candidate-bound GF-010 approval command. Game Foundry,
+  not the agent, owns commit/adoption, integration validation, non-force push,
+  remote verification, and cleanup.
+- Scheduled or unattended agents may reconcile an already-approved GF-010
+  transaction but may never create human approval.
 - Coding agents cannot modify trusted deterministic validators unless validator development is itself the task and an independent higher-level acceptance authority exists.
 - Task PASS requires deterministic acceptance followed by a Game Foundry state transition.
 - A READY task becoming available does not imply it should be executed in the same invocation.

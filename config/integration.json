@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "repositories": {
+    "game-foundry": {
+      "repository": ".",
+      "manifest_roots": ["config/approvals", "state/approval-manifests"],
+      "remote": "origin",
+      "remote_url": "https://github.com/blanzy-labs/game-foundry.git",
+      "push_url": "https://github.com/blanzy-labs/game-foundry.git",
+      "target_branch": "main",
+      "mode": "direct",
+      "allow_force_push": false,
+      "verify_remote": true,
+      "validation_dependency_mode": "shared_locked_node_modules",
+      "validation_commands": [
+        ["./scripts/doctor.sh"],
+        ["./scripts/gf-web-004-acceptance.sh", "--browser-runs", "1"]
+      ]
+    }
+  },
+  "safe_default": {
+    "mode": "explicit_configuration_required",
+    "allow_force_push": false,
+    "verify_remote": true
+  }
+}
