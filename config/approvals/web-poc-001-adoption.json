@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "approval_id": "WEB-POC-001",
+  "approval_type": "adoption_bundle",
+  "project_id": "game-foundry",
+  "repository": ".",
+  "bundle_id": "WEB-POC-001",
+  "candidate_patch_sha256": "c166101c949dfff4392189e1aef3bcc30a37f03206daa47575cea0d19d57f49b",
+  "units": [
+    {"id": "GF-WEB-002", "validation_evidence": "reports/gf-web-002/evidence-summary.json", "critic_required": false},
+    {"id": "GF-WEB-003", "validation_evidence": "reports/gf-web-003/evidence-summary.json", "critic_required": true, "critic_evidence": "artifacts/gf-web-003/gf-web-003-acceptance-20260831T000712Z/critic/result.json"},
+    {"id": "GF-WEB-004", "validation_evidence": "reports/gf-web-004/evidence-summary.json", "critic_required": true, "critic_evidence": "artifacts/gf-web-004/gf-web-004-acceptance-20260831T100611Z-95640/critic/result.json"}
+  ],
+  "evidence_bindings": [
+    {"unit_id": "GF-WEB-002", "validation_sha256": "7fd788e18457a1b2e27f854d1e6f8bfeadbb1e01343d93e3608e1e89558d28cb"},
+    {"unit_id": "GF-WEB-003", "validation_sha256": "804bbe6ab498b6a645d5ac472e049807b89ba58bf35fecabe779de4115e9359a", "critic_sha256": "a7d1292d4c2a583686e74e05b148c8bb7a2609e69903f867816a1e1dcd98c9b9"},
+    {"unit_id": "GF-WEB-004", "validation_sha256": "c5b99ad75f19f0d721e066286f833a49b379e4947f015a86634b24850f7635ce", "critic_sha256": "4f739947ba389a884de10610535617a6b3afdeabe62e977e60897639badddf37"}
+  ],
+  "remote": "origin",
+  "target_branch": "main",
+  "integration": {"mode": "direct", "allow_force_push": false, "verify_remote": true},
+  "validation_commands": [["./scripts/doctor.sh"], ["./scripts/gf-web-004-acceptance.sh", "--browser-runs", "1"]],
+  "human_qa_artifact": "artifacts/gf-web-004/gf-web-004-acceptance-20260831T100611Z-95640/release",
+  "adoption": {
+    "groups": [
+      {
+        "id": "GF-WEB-002-003",
+        "unit_ids": ["GF-WEB-002", "GF-WEB-003"],
+        "commit_message": "GF-WEB-002/003: add browser acceptance and Cloudflare hosting",
+        "paths": [
+          ".gitignore", "fixtures/web-export-project/main.gd", "scripts/doctor.sh",
+          "package.json", "package-lock.json", "config/hosting/cloudflare-pages.json",
+          "docs/slices/GF-WEB-002-browser-runtime-acceptance.md", "docs/slices/GF-WEB-003-cloudflare-hosting-contract.md",
+          "reports/gf-web-002/evidence-summary.json", "reports/gf-web-002/evidence-summary.md",
+          "reports/gf-web-003/evidence-summary.json", "reports/gf-web-003/evidence-summary.md",
+          "scripts/gf-web-002-acceptance.sh", "scripts/gf-web-003-acceptance.sh", "scripts/gf-web-browser-test.sh",
+          "scripts/gf-web-hosting-classify.sh", "scripts/gf-web-hosting-finalize.sh", "scripts/gf-web-hosting-package.sh",
+          "scripts/gf-web-hosting-verify.sh", "scripts/gf-web-local-preview.sh",
+          "scripts/lib/gf-web-browser-common.sh", "scripts/lib/gf-web-hosting.py",
+          "scripts/web/browser-acceptance.mjs", "scripts/web/hosting-server.mjs"
+        ]
+      },
+      {
+        "id": "GF-WEB-004",
+        "unit_ids": ["GF-WEB-004"],
+        "commit_message": "GF-WEB-004: add Cyber Shield Web game POC",
+        "paths": [
+          "README.md", "config/projects.json", "docs/slices/GF-WEB-004-cyber-shield-real-web-game.md",
+          "games/cyber-shield/cyber_shield.gd", "games/cyber-shield/cyber_shield.gd.uid",
+          "games/cyber-shield/export_presets.cfg", "games/cyber-shield/main.tscn", "games/cyber-shield/project.godot",
+          "games/cyber-shield/tests/game_acceptance.gd", "games/cyber-shield/tests/game_acceptance.gd.uid",
+          "games/cyber-shield/threat_labels.gd", "games/cyber-shield/threat_labels.gd.uid",
+          "reports/gf-web-004/evidence-summary.json", "reports/gf-web-004/evidence-summary.md",
+          "scripts/gf-web-004-acceptance.sh", "scripts/gf-web-004-browser-test.sh", "scripts/web/cyber-shield-acceptance.mjs"
+        ]
+      }
+    ]
+  }
+}

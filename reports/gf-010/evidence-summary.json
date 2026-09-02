@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "slice": "GF-010",
+  "status": "pass_with_warnings",
+  "status_label": "GF-010 PASS WITH WARNINGS",
+  "human_gate": "pending",
+  "human_gate_label": "HUMAN GF-010 APPROVAL = PENDING",
+  "committed": false,
+  "pushed": false,
+  "merged": false,
+  "production_mutation": false,
+  "acceptance": {
+    "status": "pass",
+    "iterations": 20,
+    "checks_per_iteration": 20,
+    "checks_passed": 400,
+    "failures": 0,
+    "orphan_worktrees": 0,
+    "evidence": "artifacts/gf-010/gf010-acceptance-20260831T165300Z/result.json"
+  },
+  "critic": {
+    "model": "gpt-5.6-sol",
+    "mode": "read-only",
+    "decision": "PASS",
+    "blockers": 0,
+    "evidence": "artifacts/gf-010/gf010-acceptance-20260831T165300Z/critic.json"
+  },
+  "regressions": {
+    "doctor": "pass",
+    "gf_h02": "pass",
+    "gf_h03": "pass",
+    "gf_009": "pass",
+    "pytest": {"status": "pass", "tests": 16, "subtests": 12},
+    "gf_008_fresh": {"status": "not_complete", "reason": "external critic credential/model unavailable"},
+    "evidence_root": "artifacts/gf-010/regression-final-20260831T170100Z"
+  },
+  "real_github_smoke": {
+    "status": "not_run",
+    "reason": "remote mutation unauthorized before GF-010 human approval"
+  },
+  "real_web_policy_smoke": {
+    "status": "pass",
+    "production_deployment": false,
+    "evidence": "artifacts/gf-010/gf010-acceptance-20260831T165300Z/real-web-policy-smoke"
+  },
+  "web_adoption": {
+    "approval_id": "WEB-POC-001",
+    "current_status": "reject_until_gf010_integrated",
+    "expected_slice_work": 32,
+    "expected_generated_metadata": 3,
+    "acceptance_evidence": 6,
+    "expected_paths_total": 41,
+    "unrelated_gf010_paths": 15,
+    "ambiguous_paths": 0,
+    "commit_groups": ["GF-WEB-002-003", "GF-WEB-004"]
+  },
+  "approval_command": "./scripts/gf-approve.sh approve --current --source operator_agent_explicit_human",
+  "git": {
+    "head": "5fa9320ee96d11ef0a869d8e6ce0d29a23f0440e",
+    "origin_main": "5fa9320ee96d11ef0a869d8e6ce0d29a23f0440e",
+    "ahead": 0,
+    "behind": 0,
+    "worktree_clean": false
+  }
+}
