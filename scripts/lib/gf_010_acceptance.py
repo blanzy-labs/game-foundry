@@ -6,12 +6,14 @@ import argparse, hashlib, json, os, pathlib, shutil, subprocess, tempfile, time
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 CLI = ROOT / "scripts/gf-approve.sh"
+CANDIDATE_IDENTITY_VERSION = 2
 NAMES = {
  "A":"approval_required", "B":"approved_direct_integration", "C":"no_repeated_approval", "D":"candidate_changed",
  "E":"remote_advances_cleanly", "F":"remote_conflict", "G":"crash_after_push", "H":"push_failure_before_remote",
  "I":"ambiguous_push_reconcile", "J":"adoption_clean", "K":"adoption_unrelated", "L":"approval_bundle",
  "M":"multiple_pending", "N":"already_integrated", "O":"pr_policy", "P":"external_reviewer_policy",
- "Q":"post_integration_validation_failure", "R":"cleanup", "S":"scheduler_cannot_approve", "T":"force_push_forbidden"}
+ "Q":"post_integration_validation_failure", "R":"cleanup", "S":"scheduler_cannot_approve", "T":"force_push_forbidden",
+ "U":"git_stable_candidate_identity"}
 
 def run(args, cwd, env=None, check=True):
     merged=os.environ.copy(); merged.update(env or {})
@@ -25,8 +27,10 @@ def adoption_fingerprint(repo, paths, base):
     identities={}
     for relative in sorted(paths):
         target=repo/relative
-        identities[relative]="absent" if not target.exists() else f"file:{target.stat().st_mode & 0o777:o}:{hashlib.sha256(target.read_bytes()).hexdigest()}"
-    return hashlib.sha256(json.dumps({"paths":identities},sort_keys=True,separators=(",",":")).encode()).hexdigest()
+        if not target.exists(): identities[relative]="absent"; continue
+        mode="100755" if target.stat().st_mode & 0o100 else "100644"
+        identities[relative]=f"file:{mode}:{hashlib.sha256(target.read_bytes()).hexdigest()}"
+    return hashlib.sha256(json.dumps({"candidate_identity_version":CANDIDATE_IDENTITY_VERSION,"base_sha":base,"paths":identities},sort_keys=True,separators=(",",":")).encode()).hexdigest()
 
 def fixture(root, name, adoption=False, units=1, mode="direct", external=False, validator_body=None, with_milestone_gates=False, shared_dependencies=False, adapter="fixture", evidence_in_adoption=False):
     case=root/name; remote=case/"remote.git"; repo=case/"repo"; state=case/"state"; artifacts=case/"artifacts"
@@ -66,7 +70,7 @@ def fixture(root, name, adoption=False, units=1, mode="direct", external=False, 
     policy=case/"integration-policy.json"; policy.write_text(json.dumps({"schema_version":1,"repositories":{"fixture":policy_integration}},indent=2)+"\n")
     manifest={"schema_version":1,"approval_id":name,"approval_type":"adoption_bundle" if adoption else "candidate_bundle","project_id":"fixture","repository":str(repo),"base_sha":base,"units":[{"id":f"UNIT-{i}","validation_evidence":str(evidence[i]),"critic_required":False} for i in range(units)],"evidence_bindings":[{"unit_id":f"UNIT-{i}","validation_sha256":hashlib.sha256(evidence[i].read_bytes()).hexdigest()} for i in range(units)],"remote":"origin","target_branch":"main","integration":integration,"validation_commands":[["./validate.sh"]]}
     if adoption:
-        manifest["adoption"]={"groups":groups}; manifest["candidate_patch_sha256"]=adoption_fingerprint(repo,groups[0]["paths"],base)
+        manifest["adoption"]={"groups":groups}; manifest["candidate_identity_version"]=CANDIDATE_IDENTITY_VERSION; manifest["candidate_patch_sha256"]=adoption_fingerprint(repo,groups[0]["paths"],base)
     else: manifest["candidate_commits"]=candidate
     milestone_state=case/"milestones"
     if with_milestone_gates:
@@ -143,7 +147,7 @@ def iteration(root, number, evidence_root=None):
     case,repo,remote,manifest,env,base=fixture(root,f"i{number}-pushfail"); cli(case,env,"create",str(manifest)); failed=cli(case,env,"approve",f"i{number}-pushfail","--source","operator_agent_explicit_human",check=False,fault="push_failure_before_remote"); retried=cli(case,env,"integrate",f"i{number}-pushfail"); record(results,"H",failed.returncode==70 and retried.returncode==0)
 
     case,repo,remote,manifest,env,base=fixture(root,f"i{number}-adopt",adoption=True); created=cli(case,env,"create",str(manifest)); adopted=cli(case,env,"approve",f"i{number}-adopt","--source","operator_agent_explicit_human"); record_value=json.loads((pathlib.Path(env["GF_APPROVAL_STATE_ROOT"])/f"i{number}-adopt.json").read_text()); adoption_receipt=(pathlib.Path(env["GF_APPROVAL_ARTIFACT_ROOT"])/f"i{number}-adopt"/"result.json").is_file(); adoption_clean=git(repo,"status","--short")=="" and record_value.get("cleanup",{}).get("source_worktree_clean") is True; record(results,"J",created.returncode==0 and adopted.returncode==0 and len(record_value["candidate_commits"])==1 and record_value["allowed_files"]==["feature-0.txt"] and adoption_clean)
-    case2,repo2,remote2,manifest2,env2,base2=fixture(root,f"i{number}-adopt-future-base",adoption=True); future_manifest=json.loads(manifest2.read_text()); future_manifest.pop("base_sha",None); manifest2.write_text(json.dumps(future_manifest,indent=2)+"\n"); (repo2/"new-base.txt").write_text("GF-010 integrated first\n"); git(repo2,"add","new-base.txt"); git(repo2,"commit","-q","-m","advance trusted base"); advanced_base=git(repo2,"rev-parse","HEAD"); git(repo2,"push","-q","origin","main"); future_created=cli(case2,env2,"create",str(manifest2)); future_record=json.loads((pathlib.Path(env2["GF_APPROVAL_STATE_ROOT"])/f"i{number}-adopt-future-base.json").read_text()); future_base_ok=future_created.returncode==0 and future_record["base_sha"]==advanced_base and future_record["candidate_patch_sha256"]==future_manifest["candidate_patch_sha256"]; j_result=results[-1]; j_result["status"]="pass" if j_result["status"]=="pass" and future_base_ok else "fail"; j_result["detail"]=None if j_result["status"]=="pass" else "adoption or post-GF-010 base transition failed"
+    case2,repo2,remote2,manifest2,env2,base2=fixture(root,f"i{number}-adopt-future-base",adoption=True); future_manifest=json.loads(manifest2.read_text()); future_manifest.pop("base_sha",None); manifest2.write_text(json.dumps(future_manifest,indent=2)+"\n"); (repo2/"new-base.txt").write_text("GF-010 integrated first\n"); git(repo2,"add","new-base.txt"); git(repo2,"commit","-q","-m","advance trusted base"); git(repo2,"push","-q","origin","main"); future_created=cli(case2,env2,"create",str(manifest2),check=False); future_base_ok=future_created.returncode!=0 and "CANDIDATE_MISMATCH" in future_created.stderr; j_result=results[-1]; j_result["status"]="pass" if j_result["status"]=="pass" and future_base_ok else "fail"; j_result["detail"]=None if j_result["status"]=="pass" else "adoption or incompatible-base rejection failed"
     case3,repo3,remote3,manifest3,env3,base3=fixture(root,f"i{number}-adopt-cleanup-crash",adoption=True,evidence_in_adoption=True); cli(case3,env3,"create",str(manifest3)); cleanup_record_before=json.loads((pathlib.Path(env3["GF_APPROVAL_STATE_ROOT"])/f"i{number}-adopt-cleanup-crash.json").read_text()); preserved_path=pathlib.Path(cleanup_record_before["evidence_snapshots"][0]["validation_snapshot_path"]); cleanup_crash=cli(case3,env3,"approve",f"i{number}-adopt-cleanup-crash","--source","operator_agent_explicit_human",check=False,fault="crash_during_adoption_cleanup"); live_evidence_removed=not (repo3/"evidence-0.json").exists(); cleanup_recovered=cli(case3,env3,"reconcile",f"i{number}-adopt-cleanup-crash"); cleanup_state=json.loads((pathlib.Path(env3["GF_APPROVAL_STATE_ROOT"])/f"i{number}-adopt-cleanup-crash.json").read_text()); adoption_cleanup_recovery=cleanup_crash.returncode==95 and live_evidence_removed and preserved_path.is_file() and cleanup_recovered.returncode==0 and cleanup_state["integration_status"]=="INTEGRATED" and git(repo3,"status","--short")==""; j_result["status"]="pass" if j_result["status"]=="pass" and adoption_cleanup_recovery else "fail"; j_result["detail"]=None if j_result["status"]=="pass" else "adoption content, preserved evidence, future base, or cleanup crash recovery failed"
     cleanup_result=next(entry for entry in results if entry["test"]=="R"); cleanup_result["status"]="pass" if cleanup_result["status"]=="pass" and crash_cleanup and adoption_clean and direct_receipt and crash_receipt and adoption_receipt else "fail"; cleanup_result["detail"]=None if cleanup_result["status"]=="pass" else "normal, crash/adoption cleanup, or final receipt failed"
     case,repo,remote,manifest,env,base=fixture(root,f"i{number}-unrelated",adoption=True); (repo/"unrelated.txt").write_text("no\n"); rejected=cli(case,env,"create",str(manifest),check=False); record(results,"K",rejected.returncode!=0 and (repo/"unrelated.txt").exists())
@@ -189,6 +193,7 @@ def iteration(root, number, evidence_root=None):
     case,repo,remote,manifest,env,base=fixture(root,f"i{number}-force"); value=json.loads(manifest.read_text()); value["integration"]["allow_force_push"]=True; manifest.write_text(json.dumps(value)); force=cli(case,env,"create",str(manifest),check=False)
     case2,repo2,remote2,manifest2,env2,base2=fixture(root,f"i{number}-redirect"); value=json.loads(manifest2.read_text()); value["target_branch"]="unauthorized"; manifest2.write_text(json.dumps(value)); redirect=cli(case2,env2,"create",str(manifest2),check=False); record(results,"T",force.returncode!=0 and "FORCE_PUSH_FORBIDDEN" in force.stderr and redirect.returncode!=0 and "INTEGRATION_POLICY_MISMATCH" in redirect.stderr)
     case3,repo3,remote3,manifest3,env3,base3=fixture(root,f"i{number}-remote-swap"); cli(case3,env3,"create",str(manifest3)); attacker=case3/"attacker.git"; run(["git","init","--bare","-q",str(attacker)],case3); git(repo3,"remote","set-url","--push","origin",str(attacker)); swapped=cli(case3,env3,"approve",f"i{number}-remote-swap","--source","operator_agent_explicit_human",check=False); t_result=results[-1]; remote_identity_ok=swapped.returncode!=0 and "REMOTE_IDENTITY_CHANGED" in swapped.stderr and not git(repo3,"ls-remote",str(attacker),"refs/heads/main",check=False); t_result["status"]="pass" if t_result["status"]=="pass" and remote_identity_ok else "fail"; t_result["detail"]=None if t_result["status"]=="pass" else "force, target-redirection, or remote-identity rejection failed"
+    identity_suite=run([str(ROOT/"scripts/gf-identity-acceptance.sh")],root,check=False); record(results,"U",identity_suite.returncode==0,identity_suite.stderr.strip() or identity_suite.stdout.strip() if identity_suite.returncode else None)
     if evidence_root is not None:
         evidence_root.mkdir(parents=True, exist_ok=True)
         selected=[f"i{number}-direct",f"i{number}-reset-before-push",f"i{number}-conflict",f"i{number}-crash",f"i{number}-crash-evidence-missing",f"i{number}-crash-prepush",f"i{number}-crash-worktree-gap",f"i{number}-crash-advanced",f"i{number}-crash-rewritten",f"i{number}-ambiguous-arrived",f"i{number}-ambiguous-absent",f"i{number}-ambiguous-unresolved",f"i{number}-ambiguous-evidence-changed",f"i{number}-adopt",f"i{number}-adopt-future-base",f"i{number}-adopt-cleanup-crash",f"i{number}-unrelated",f"i{number}-rename",f"i{number}-bundle",f"i{number}-bundle-gate-crash",f"i{number}-bundle-history-crash",f"i{number}-concurrent",f"i{number}-pr-O",f"i{number}-pr-P",f"i{number}-pr-reset",f"i{number}-pr-recovery",f"i{number}-pr-merge-recovery",f"i{number}-pr-merge-unknown",f"i{number}-github-retarget",f"i{number}-pr-branch-moved",f"i{number}-pr-delete-rejected",f"i{number}-pr-branch-race",f"i{number}-validation",f"i{number}-validation-dirty",f"i{number}-validation-shared-deps",f"i{number}-validation-deps-mismatch",f"i{number}-scheduler",f"i{number}-force",f"i{number}-multi"]
@@ -213,9 +218,9 @@ def main():
         temp_root=pathlib.Path(temp)
         for number in range(1,args.iterations+1):
             results=iteration(temp_root,number,args.artifact_root/"fixtures" if number==1 else None); all_results.extend({"iteration":number,**entry} for entry in results)
-            failures=sum(1 for entry in results if entry["status"]!="pass"); print(f"iteration {number:02d}: {20-failures}/20 PASS")
+            failures=sum(1 for entry in results if entry["status"]!="pass"); print(f"iteration {number:02d}: {21-failures}/21 PASS")
     failed=[entry for entry in all_results if entry["status"]!="pass"]
-    result={"slice":"GF-010","status":"pass" if not failed else "fail","iterations":args.iterations,"checks_per_iteration":20,"checks":all_results,"failures":len(failed),"duration_seconds":round(time.time()-started,6),"real_github_smoke":"not_run"}
+    result={"slice":"GF-010","status":"pass" if not failed else "fail","iterations":args.iterations,"checks_per_iteration":21,"checks":all_results,"failures":len(failed),"duration_seconds":round(time.time()-started,6),"real_github_smoke":"not_run"}
     (args.artifact_root/"results.jsonl").write_text("".join(json.dumps(entry,sort_keys=True)+"\n" for entry in all_results),encoding="utf-8")
     (args.artifact_root/"result.json").write_text(json.dumps(result,indent=2)+"\n"); print(f"GF-010 ACCEPTANCE: {result['status'].upper()}\nFAILURES: {len(failed)}\nEVIDENCE: {args.artifact_root}")
     return 0 if not failed else 1
