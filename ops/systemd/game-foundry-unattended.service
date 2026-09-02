@@ -6,8 +6,8 @@ Wants=network-online.target
 [Service]
 Type=oneshot
 Environment=GF_UNATTENDED_RUN=1
-WorkingDirectory=%h/projects/game-foundry
-ExecStart=%h/projects/game-foundry/scripts/gf-unattended-run.sh --json --max-tasks 1 --max-minutes 45 GF-MILESTONE-ID
+WorkingDirectory=%h/projects/game-platform/game-foundry
+ExecStart=%h/projects/game-platform/game-foundry/scripts/gf-unattended-run.sh --json --max-tasks 1 --max-minutes 45 GF-MILESTONE-ID
 
 # Replace GF-MILESTONE-ID and paths before installing this reference unit.
 # Game Foundry owns milestone selection, recovery, execution, and stop policy.
