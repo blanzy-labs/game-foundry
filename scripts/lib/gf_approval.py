@@ -24,6 +24,7 @@ STATES = {
     "INTEGRATION_VALIDATING", "PUSHING", "REMOTE_VERIFYING", "INTEGRATED",
     "INTEGRATION_FAILED", "HUMAN_REQUIRED", "REVOKED",
 }
+CANDIDATE_IDENTITY_VERSION = 2
 
 
 class ApprovalError(Exception):
@@ -194,13 +195,28 @@ def status_paths(repo: pathlib.Path) -> list[str]:
     return sorted(set(paths))
 
 
-def safe_path(repo: pathlib.Path, relative: str) -> pathlib.Path:
-    if not relative or relative.startswith("/") or ".." in pathlib.PurePosixPath(relative).parts:
+def normalize_candidate_path(relative: str) -> str:
+    pure = pathlib.PurePosixPath(relative)
+    normalized = pure.as_posix()
+    if not relative or pure.is_absolute() or ".." in pure.parts or normalized in {"", "."} or normalized != relative:
         raise ApprovalError(f"unsafe candidate path: {relative}", "ADOPTION_AMBIGUITY")
-    target = repo / relative
+    return normalized
+
+
+def safe_path(repo: pathlib.Path, relative: str) -> pathlib.Path:
+    target = repo / normalize_candidate_path(relative)
     if target.is_symlink():
         raise ApprovalError(f"candidate symlink rejected: {relative}", "ADOPTION_AMBIGUITY")
     return target
+
+
+def git_file_mode(mode: int) -> str:
+    return "100755" if mode & 0o100 else "100644"
+
+
+def git_blob_identity(mode: str, digest: str) -> str:
+    normalized_mode = "100755" if int(mode, 8) & 0o100 else "100644"
+    return f"file:{normalized_mode}:{digest}"
 
 
 def path_identity(repo: pathlib.Path, relative: str) -> str:
@@ -210,12 +226,17 @@ def path_identity(repo: pathlib.Path, relative: str) -> str:
     if not target.is_file():
         raise ApprovalError(f"candidate path is not a file: {relative}", "ADOPTION_AMBIGUITY")
     digest = hashlib.sha256(target.read_bytes()).hexdigest()
-    return f"file:{target.stat().st_mode & 0o777:o}:{digest}"
+    return git_blob_identity(git_file_mode(target.stat().st_mode), digest)
 
 
-def workspace_fingerprint(repo: pathlib.Path, paths: list[str], base_sha: str) -> tuple[str, dict[str, str]]:
-    identities = {path: path_identity(repo, path) for path in sorted(paths)}
-    canonical = json.dumps({"paths": identities}, sort_keys=True, separators=(",", ":")).encode()
+def workspace_fingerprint(repo: pathlib.Path, paths: list[str], base_sha: str, candidate_identity_version: int = CANDIDATE_IDENTITY_VERSION) -> tuple[str, dict[str, str]]:
+    if candidate_identity_version != CANDIDATE_IDENTITY_VERSION:
+        raise ApprovalError("candidate identity algorithm version is incompatible", "CANDIDATE_IDENTITY_VERSION_MISMATCH")
+    normalized_paths = [normalize_candidate_path(path) for path in paths]
+    if len(set(normalized_paths)) != len(normalized_paths):
+        raise ApprovalError("candidate paths are not unique after normalization", "ADOPTION_AMBIGUITY")
+    identities = {path: path_identity(repo, path) for path in sorted(normalized_paths)}
+    canonical = json.dumps({"candidate_identity_version": candidate_identity_version, "paths": identities}, sort_keys=True, separators=(",", ":")).encode()
     return hashlib.sha256(canonical).hexdigest(), identities
 
 
@@ -391,7 +412,9 @@ def create_adoption_commits(repo: pathlib.Path, approval_id: str, base_sha: str,
             for relative in paths:
                 target = safe_path(repo, relative)
                 if target.exists():
-                    git(repo, "add", "--", relative, env=env)
+                    blob = git(repo, "hash-object", "-w", "--", relative)
+                    mode = git_file_mode(target.stat().st_mode)
+                    git(repo, "update-index", "--add", "--cacheinfo", f"{mode},{blob},{relative}", env=env)
                 else:
                     git(repo, "rm", "--cached", "--ignore-unmatch", "--", relative, env=env)
             tree = git(repo, "write-tree", env=env)
@@ -460,6 +483,8 @@ def validate_manifest(value: dict[str, Any]) -> None:
         raise ApprovalError("integration mode must be direct or pull_request")
     if value.get("approval_type") == "adoption_bundle" and not value.get("candidate_patch_sha256"):
         raise ApprovalError("adoption manifest requires exact candidate fingerprint", "CANDIDATE_MISMATCH")
+    if value.get("approval_type") == "adoption_bundle" and value.get("candidate_identity_version") != CANDIDATE_IDENTITY_VERSION:
+        raise ApprovalError("adoption manifest candidate identity version is missing or incompatible", "CANDIDATE_IDENTITY_VERSION_MISMATCH")
     for command in value["validation_commands"]:
         if not isinstance(command, list) or not command or not all(isinstance(part, str) and part for part in command):
             raise ApprovalError("validation commands must be nonempty argv arrays")
@@ -480,6 +505,7 @@ def create_manifest(manifest_path: pathlib.Path) -> dict[str, Any]:
     trusted_integration, trusted_validation, trusted_remote_url, trusted_push_url = enforce_policy(manifest, repo, manifest_path)
     base_sha = manifest.get("base_sha") or git(repo, "rev-parse", "HEAD")
     git(repo, "cat-file", "-e", f"{base_sha}^{{commit}}")
+    base_sha = git(repo, "rev-parse", f"{base_sha}^{{commit}}")
     created_at = now()
     candidates = manifest.get("candidate_commits", [])
     allowed: list[str] = []
@@ -503,7 +529,7 @@ def create_manifest(manifest_path: pathlib.Path) -> dict[str, Any]:
         }
         if unexpected or missing_dirty:
             raise ApprovalError(f"adoption rejected; unrelated={unexpected}; ambiguous={missing_dirty}", "ADOPTION_AMBIGUITY")
-        fingerprint, identities = workspace_fingerprint(repo, allowed, base_sha)
+        fingerprint, identities = workspace_fingerprint(repo, allowed, base_sha, manifest["candidate_identity_version"])
         if manifest.get("candidate_patch_sha256") != fingerprint:
             raise ApprovalError("adoption manifest is not bound to the exact workspace fingerprint", "CANDIDATE_MISMATCH")
         candidates = create_adoption_commits(repo, approval_id, base_sha, groups, created_at)
@@ -533,6 +559,7 @@ def create_manifest(manifest_path: pathlib.Path) -> dict[str, Any]:
         "candidate_sha": candidates[-1]["sha"],
         "candidate_tree_sha": candidates[-1]["tree_sha"],
         "candidate_patch_sha256": fingerprint,
+        "candidate_identity_version": manifest.get("candidate_identity_version", 1),
         "candidate_path_identities": identities,
         "allowed_files": allowed,
         "base_sha": base_sha,
@@ -580,6 +607,8 @@ def create_manifest(manifest_path: pathlib.Path) -> dict[str, Any]:
 
 def verify_immutable_binding(record: dict[str, Any], *, allow_preserved_evidence: bool = False) -> None:
     repo = pathlib.Path(record["repository"])
+    if record["approval_type"] == "adoption_bundle" and record.get("candidate_identity_version") != CANDIDATE_IDENTITY_VERSION:
+        raise ApprovalError("approval uses an incompatible candidate identity algorithm", "CANDIDATE_IDENTITY_VERSION_MISMATCH")
     verify_remote_identity(record)
     trusted_policy = pathlib.Path(record["integration_policy_path"])
     if not trusted_policy.is_file() or trusted_policy.is_symlink() or sha256_file(trusted_policy) != record["integration_policy_sha256"]:
@@ -604,7 +633,7 @@ def verify_candidate_binding(record: dict[str, Any]) -> None:
     verify_immutable_binding(record)
     repo = pathlib.Path(record["repository"])
     if record["approval_type"] == "adoption_bundle":
-        current, identities = workspace_fingerprint(repo, record["allowed_files"], record["base_sha"])
+        current, identities = workspace_fingerprint(repo, record["allowed_files"], record["base_sha"], record["candidate_identity_version"])
         if current != record["candidate_patch_sha256"] or identities != record["candidate_path_identities"]:
             raise ApprovalError("candidate changed after approval", "CANDIDATE_CHANGED_AFTER_APPROVAL")
         dirty = status_paths(repo)
@@ -642,6 +671,8 @@ def write_receipt(record: dict[str, Any]) -> None:
         "integration_status": record["integration_status"],
         "candidates": record.get("candidate_commits", []),
         "candidate_commits": record.get("candidate_commits", []),
+        "candidate_identity_version": record.get("candidate_identity_version"),
+        "candidate_patch_sha256": record.get("candidate_patch_sha256"),
         "base": record.get("base_sha"),
         "integration_head": record.get("integration_commit"),
         "integration_commit": record.get("integration_commit"),
@@ -756,7 +787,7 @@ def cleanup_adoption_source(record: dict[str, Any]) -> bool:
         if tracked:
             mode_and_blob = git(repo, "ls-tree", "HEAD", "--", relative).split()
             blob = subprocess.run(["git", "cat-file", "blob", f"HEAD:{relative}"], cwd=repo, capture_output=True, check=True).stdout
-            baseline = f"file:{int(mode_and_blob[0], 8) & 0o777:o}:{hashlib.sha256(blob).hexdigest()}"
+            baseline = git_blob_identity(mode_and_blob[0], hashlib.sha256(blob).hexdigest())
         else:
             baseline = "absent"
         current = path_identity(repo, relative)
